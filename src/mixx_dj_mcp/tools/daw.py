@@ -1,4 +1,4 @@
-"""DAW cross-connection — export stems/sessions to Reaper, Fairlight, or disk."""
+"""DAW cross-connection — export stems/sessions to Reaper, Fairlight, Resolume, or disk."""
 from typing import Any, Literal
 from pathlib import Path
 import os
@@ -13,12 +13,13 @@ console = Console(file=__import__("sys").stderr)
 
 DAVINCI_RESOLVE_API = os.getenv("DAVINCI_RESOLVE_API", "http://127.0.0.1:10843")
 REAPER_API = os.getenv("REAPER_API", "http://127.0.0.1:10797")
+RESOLUME_API = os.getenv("RESOLUME_MCP_API", "http://127.0.0.1:0")  # MCP stdio — use OSC directly
 
 
 def register_daw_tools(mcp: FastMCP):
     @mcp.tool()
     async def mixx_daw(
-        operation: Literal["export_stems", "export_session", "send_to_fairlight", "send_to_reaper"],
+        operation: Literal["export_stems", "export_session", "send_to_fairlight", "send_to_reaper", "resolume_sync"],
         source_dir: str = "",
         output_dir: str = "",
         session_name: str = "",
@@ -35,6 +36,7 @@ def register_daw_tools(mcp: FastMCP):
         - export_session: Write a session metadata JSON for DAW import
         - send_to_fairlight: Send stems to DaVinci Resolve's Fairlight page via REST API
         - send_to_reaper: Send stems to Reaper via reaper-mcp REST API (POST /api/v1/project/import_media)
+        - resolume_sync: Send deck BPM and play state to Resolume via OSC (port 7000)
 
         Returns:
             Dict with export result and file paths
@@ -157,6 +159,30 @@ def register_daw_tools(mcp: FastMCP):
                     "message": f"Sent {len(imported)}/{len(wav_files)} stems to Reaper",
                     "data": {"imported": imported, "total": len(wav_files), "api": api},
                 }
+
+            elif operation == "resolume_sync":
+                """Send deck BPM and beat state to Resolume via OSC."""
+                bpm = bridge.get_state("bpm", deck, 128.0)
+                playing = bridge.get_state("play", deck, 0.0)
+                volume = bridge.get_state("volume", deck, 0.8)
+
+                try:
+                    from pythonosc import udp_client
+                    client = udp_client.SimpleUDPClient("127.0.0.1", 7000)
+                    # Resolume OSC address space
+                    client.send_message("/composition/tempo", float(bpm))
+                    client.send_message("/composition/bpm", float(bpm))
+                    client.send_message(f"/deck/{deck}/playing", 1.0 if playing else 0.0)
+                    client.send_message(f"/deck/{deck}/volume", float(volume))
+                    return {
+                        "success": True,
+                        "message": f"Sent BPM {bpm} to Resolume on port 7000",
+                        "data": {"bpm": bpm, "playing": bool(playing), "deck": deck},
+                    }
+                except ImportError:
+                    return {"success": False, "message": "python-osc not installed", "data": {}}
+                except Exception as e:
+                    return {"success": False, "message": f"Resolume OSC error: {e}", "data": {}}
 
             else:
                 return {"success": False, "message": f"Unknown operation: {operation}", "data": {}}

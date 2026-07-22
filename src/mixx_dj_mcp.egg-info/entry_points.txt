@@ -1,0 +1,2 @@
+[console_scripts]
+mixx-dj-mcp = mixx_dj_mcp.__main__:main
