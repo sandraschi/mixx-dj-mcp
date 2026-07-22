@@ -11,6 +11,8 @@ def register_all_tools(mcp):
     from .skin_manager import register_skin_tools
     from .smart_crate import register_crate_tools
 
+    from .stems import register_stems_tools
+
     register_deck_tools(mcp)
     register_library_tools(mcp)
     register_effects_tools(mcp)
@@ -19,3 +21,4 @@ def register_all_tools(mcp):
     register_sequencer_tools(mcp)
     register_skin_tools(mcp)
     register_crate_tools(mcp)
+    register_stems_tools(mcp)
