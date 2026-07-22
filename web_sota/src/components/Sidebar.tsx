@@ -4,6 +4,7 @@ import {
   Disc3,
   Library,
   Sparkles,
+  Monitor,
   MessageSquare,
   Wrench,
   Settings,
@@ -15,6 +16,7 @@ import { useStore } from "../lib/store";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/cockpit", icon: Monitor, label: "Cockpit" },
   { to: "/decks", icon: Disc3, label: "Decks" },
   { to: "/library", icon: Library, label: "Library" },
   { to: "/effects", icon: Sparkles, label: "Effects" },
