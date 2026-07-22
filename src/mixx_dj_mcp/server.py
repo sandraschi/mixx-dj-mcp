@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastmcp import FastMCP
 from pydantic import BaseModel
@@ -14,14 +13,18 @@ from .bridge.osc_bridge import OscBridge
 from .config import MixxConfig
 from .http_app import create_app, mount_mcp
 
+
 class DeckLoadRequest(BaseModel):
     track_path: str
+
 
 class PlayPauseRequest(BaseModel):
     action: str = "toggle"
 
+
 class CueRequest(BaseModel):
     mode: str = "cue"
+
 
 console = Console(file=sys.stderr)
 
@@ -53,10 +56,13 @@ def get_tool_count() -> int:
     return _registered_tool_count
 
 
-from .tools import register_all_tools
+from .tools import register_all_tools  # noqa: E402
+
 register_all_tools(mcp)
 
-_registered_tool_count = len(mcp._tool_manager._tools) if hasattr(mcp, "_tool_manager") and hasattr(mcp._tool_manager, "_tools") else 0
+_registered_tool_count = (
+    len(mcp._tool_manager._tools) if hasattr(mcp, "_tool_manager") and hasattr(mcp._tool_manager, "_tools") else 0
+)
 
 fastapi_app = create_app(config)
 
@@ -94,14 +100,22 @@ async def health_check():
 
 @fastapi_app.get("/api/v1/diagnostics")
 async def diagnostics():
-    bridge = get_osc_bridge()
+    get_osc_bridge()
     return {
         "status": "ok",
         "server": config.mcp_name,
         "version": "0.1.0",
         "uptime_seconds": get_uptime(),
         "tool_count": get_tool_count(),
-        "tools": [{"name": "mixx_deck"}, {"name": "mixx_library"}, {"name": "mixx_effects"}, {"name": "mixx_mixer"}, {"name": "show_deck_status_card"}, {"name": "show_mixer_status_card"}, {"name": "show_library_status_card"}],
+        "tools": [
+            {"name": "mixx_deck"},
+            {"name": "mixx_library"},
+            {"name": "mixx_effects"},
+            {"name": "mixx_mixer"},
+            {"name": "show_deck_status_card"},
+            {"name": "show_mixer_status_card"},
+            {"name": "show_library_status_card"},
+        ],
         "system": {"windows": True},
         "errors": [],
     }
@@ -112,18 +126,20 @@ async def deck_status():
     bridge = get_osc_bridge()
     decks = []
     for d in range(1, 5):
-        decks.append({
-            "id": d,
-            "playing": bool(bridge.get_state("play", d, 0.0)),
-            "bpm": bridge.get_state("bpm", d, 128.0),
-            "key": bridge.get_state("key", d, "Unknown"),
-            "track_title": bridge.get_state("track_title", d, "No Track Loaded"),
-            "track_artist": bridge.get_state("track_artist", d, ""),
-            "volume": bridge.get_state("volume", d, 0.8),
-            "gain": bridge.get_state("pregain", d, 1.0),
-            "sync_enabled": bool(bridge.get_state("sync_enabled", d, 0.0)),
-            "loop_enabled": bool(bridge.get_state("loop_enabled", d, 0.0)),
-        })
+        decks.append(
+            {
+                "id": d,
+                "playing": bool(bridge.get_state("play", d, 0.0)),
+                "bpm": bridge.get_state("bpm", d, 128.0),
+                "key": bridge.get_state("key", d, "Unknown"),
+                "track_title": bridge.get_state("track_title", d, "No Track Loaded"),
+                "track_artist": bridge.get_state("track_artist", d, ""),
+                "volume": bridge.get_state("volume", d, 0.8),
+                "gain": bridge.get_state("pregain", d, 1.0),
+                "sync_enabled": bool(bridge.get_state("sync_enabled", d, 0.0)),
+                "loop_enabled": bool(bridge.get_state("loop_enabled", d, 0.0)),
+            }
+        )
     return {"decks": decks, "crossfader": bridge.get_global_state("crossfader", 0.0)}
 
 
@@ -144,6 +160,7 @@ async def deck_load(deck_id: int, req: DeckLoadRequest):
     bridge.send(f"/deck/{deck_id}/LoadTrack", req.track_path)
     return {"success": True, "deck": deck_id, "track": req.track_path}
 
+
 @fastapi_app.post("/api/v1/deck/{deck_id}/play_pause")
 async def deck_play_pause(deck_id: int, req: PlayPauseRequest):
     bridge = get_osc_bridge()
@@ -155,17 +172,20 @@ async def deck_play_pause(deck_id: int, req: PlayPauseRequest):
         bridge.send(f"/deck/{deck_id}/play", 1.0)
     return {"success": True, "deck": deck_id, "action": req.action}
 
+
 @fastapi_app.post("/api/v1/deck/{deck_id}/sync")
 async def deck_sync(deck_id: int):
     bridge = get_osc_bridge()
     bridge.send(f"/deck/{deck_id}/sync_enabled", 1.0)
     return {"success": True, "deck": deck_id}
 
+
 @fastapi_app.post("/api/v1/deck/{deck_id}/cue")
 async def deck_cue(deck_id: int, req: CueRequest):
     bridge = get_osc_bridge()
     bridge.send(f"/deck/{deck_id}/cue_play", 1.0)
     return {"success": True, "deck": deck_id, "mode": req.mode}
+
 
 app = fastapi_app
 

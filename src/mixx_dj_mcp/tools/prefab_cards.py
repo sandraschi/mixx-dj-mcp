@@ -43,9 +43,14 @@ def register_prefab_tools(mcp: FastMCP):
             sync_str = "Synced" if sync_enabled else "Free"
             loop_str = "Loop On" if loop_enabled else "Loop Off"
 
-            with Card(data_testid="deck-status-card", css_class="max-w-lg border border-neutral-700 bg-neutral-900 rounded-lg shadow-lg p-4") as view:
+            with Card(
+                data_testid="deck-status-card",
+                css_class="max-w-lg border border-neutral-700 bg-neutral-900 rounded-lg shadow-lg p-4",
+            ) as view:
                 with CardHeader():
-                    CardTitle(f"Deck {deck} Status", data_testid="deck-status-title", css_class="text-lg font-bold text-white")
+                    CardTitle(
+                        f"Deck {deck} Status", data_testid="deck-status-title", css_class="text-lg font-bold text-white"
+                    )
                 with CardContent(css_class="mt-2 space-y-1"):
                     Div(data_testid="kpi-server")
                     Text(f"Track: {track_artist} - {track_title}", css_class="text-sm text-neutral-300")
@@ -75,9 +80,14 @@ def register_prefab_tools(mcp: FastMCP):
             bridge = get_bridge()
             crossfader = bridge.get_global_state("crossfader", 0.0)
 
-            with Card(data_testid="mixer-status-card", css_class="max-w-lg border border-neutral-700 bg-neutral-900 rounded-lg shadow-lg p-4") as view:
+            with Card(
+                data_testid="mixer-status-card",
+                css_class="max-w-lg border border-neutral-700 bg-neutral-900 rounded-lg shadow-lg p-4",
+            ) as view:
                 with CardHeader():
-                    CardTitle("Mixer Status", data_testid="mixer-status-title", css_class="text-lg font-bold text-white")
+                    CardTitle(
+                        "Mixer Status", data_testid="mixer-status-title", css_class="text-lg font-bold text-white"
+                    )
                 with CardContent(css_class="mt-2 space-y-1"):
                     Div(data_testid="kpi-tools")
                     Text(f"Crossfader: {crossfader:+.2f}", css_class="text-sm text-neutral-300")
@@ -113,13 +123,21 @@ def register_prefab_tools(mcp: FastMCP):
             connected = bridge.is_connected()
             conn_str = "Connected" if connected else "Disconnected"
 
-            with Card(data_testid="library-status-card", css_class="max-w-lg border border-neutral-700 bg-neutral-900 rounded-lg shadow-lg p-4") as view:
+            with Card(
+                data_testid="library-status-card",
+                css_class="max-w-lg border border-neutral-700 bg-neutral-900 rounded-lg shadow-lg p-4",
+            ) as view:
                 with CardHeader():
-                    CardTitle("Library Status", data_testid="library-status-title", css_class="text-lg font-bold text-white")
+                    CardTitle(
+                        "Library Status", data_testid="library-status-title", css_class="text-lg font-bold text-white"
+                    )
                 with CardContent(css_class="mt-2 space-y-1"):
                     Text(f"Mixxx OSC: {conn_str}", data_testid="backend-dot", css_class="text-sm text-neutral-300")
                     Text("Ports: OSC In 11119 / OSC Out 11118", css_class="text-sm text-neutral-300")
-                    Text("Use mixx_library to search, browse, and load tracks.", css_class="text-sm text-neutral-400 italic")
+                    Text(
+                        "Use mixx_library to search, browse, and load tracks.",
+                        css_class="text-sm text-neutral-400 italic",
+                    )
 
             return ToolResult(
                 content=f"Library Status: {conn_str}",

@@ -109,9 +109,20 @@ CO_ADDRESS_PATTERNS = {
 }
 
 DECK_OBSERVED_COS = [
-    "play", "bpm", "rate", "volume", "pregain",
-    "sync_enabled", "sync_leader", "loop_enabled",
-    "keylock", "quantize", "pfl",
-    "filterHigh", "filterMid", "filterLow",
-    "track_samples", "track_samplerate",
+    "play",
+    "bpm",
+    "rate",
+    "volume",
+    "pregain",
+    "sync_enabled",
+    "sync_leader",
+    "loop_enabled",
+    "keylock",
+    "quantize",
+    "pfl",
+    "filterHigh",
+    "filterMid",
+    "filterLow",
+    "track_samples",
+    "track_samplerate",
 ]

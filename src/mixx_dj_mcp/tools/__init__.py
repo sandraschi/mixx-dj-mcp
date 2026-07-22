@@ -2,6 +2,7 @@
 
 
 def register_all_tools(mcp):
+    from .controller import register_controller_tools
     from .deck_control import register_deck_tools
     from .effects import register_effects_tools
     from .library import register_library_tools
@@ -10,8 +11,6 @@ def register_all_tools(mcp):
     from .set_sequencer import register_sequencer_tools
     from .skin_manager import register_skin_tools
     from .smart_crate import register_crate_tools
-
-    from .controller import register_controller_tools
     from .stems import register_stems_tools
     from .vinyl import register_vinyl_tools
 

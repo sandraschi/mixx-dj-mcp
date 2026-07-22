@@ -52,7 +52,7 @@ def register_crate_tools(mcp: FastMCP):
                 return {
                     "success": True,
                     "message": f"Searching: '{search_query}'. In Mixxx, save search as crate '{name}'",
-                    "data": {"crate": name, "search_query": search_query, "prompt": prompt}
+                    "data": {"crate": name, "search_query": search_query, "prompt": prompt},
                 }
 
             elif operation == "list":
@@ -76,7 +76,11 @@ def register_crate_tools(mcp: FastMCP):
                 if not name:
                     return {"success": False, "message": "name required", "data": {}}
                 if not rule:
-                    return {"success": False, "message": "rule required (e.g. '126-132 BPM, Dm or Em, 4+ stars')", "data": {}}
+                    return {
+                        "success": False,
+                        "message": "rule required (e.g. '126-132 BPM, Dm or Em, 4+ stars')",
+                        "data": {},
+                    }
 
                 rules_file = _get_rules_path()
                 rules = {}
@@ -101,7 +105,7 @@ def register_crate_tools(mcp: FastMCP):
                         "rule": rule,
                         "search_query": search_query,
                         "update_frequency": update,
-                    }
+                    },
                 }
 
             else:
@@ -117,16 +121,19 @@ async def _prompt_to_search(prompt: str) -> str:
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.post("http://localhost:11434/api/generate", json={
-                "model": "llama3.2:3b",
-                "prompt": (
-                    "Convert this DJ crate description into Mixxx library search syntax. "
-                    "Rules: use bpm:, key:, genre: prefixes, AND/OR operators, - for negation. "
-                    "Only output the search query, nothing else.\n\n"
-                    f"Description: {prompt}\n\nSearch:"
-                ),
-                "stream": False,
-            })
+            r = await client.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "llama3.2:3b",
+                    "prompt": (
+                        "Convert this DJ crate description into Mixxx library search syntax. "
+                        "Rules: use bpm:, key:, genre: prefixes, AND/OR operators, - for negation. "
+                        "Only output the search query, nothing else.\n\n"
+                        f"Description: {prompt}\n\nSearch:"
+                    ),
+                    "stream": False,
+                },
+            )
             if r.status_code == 200:
                 result = r.json().get("response", "").strip().strip('"').strip("'")
                 if result:
@@ -138,14 +145,33 @@ async def _prompt_to_search(prompt: str) -> str:
     search_parts = []
     for i, word in enumerate(parts):
         if word == "bpm" and i + 1 < len(parts):
-            search_parts.append(f"bpm:{parts[i+1]}")
-        elif word.isdigit() and i > 0 and parts[i-1] == "bpm":
+            search_parts.append(f"bpm:{parts[i + 1]}")
+        elif word.isdigit() and i > 0 and parts[i - 1] == "bpm":
             continue
         elif word in (
-            "tech", "house", "deep", "progressive", "minimal",
-            "techno", "trance", "dubstep", "drum", "bass",
-            "garage", "disco", "funk", "soul", "rnb", "hip",
-            "hop", "edm", "pop", "rock", "metal", "jazz", "blues",
+            "tech",
+            "house",
+            "deep",
+            "progressive",
+            "minimal",
+            "techno",
+            "trance",
+            "dubstep",
+            "drum",
+            "bass",
+            "garage",
+            "disco",
+            "funk",
+            "soul",
+            "rnb",
+            "hip",
+            "hop",
+            "edm",
+            "pop",
+            "rock",
+            "metal",
+            "jazz",
+            "blues",
         ):
             search_parts.append(f'genre:"{word}"')
         elif not any(c.isdigit() for c in word):
@@ -157,6 +183,7 @@ async def _prompt_to_search(prompt: str) -> str:
 def _get_rules_path():
     import os
     from pathlib import Path
+
     data_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share")) / "mixx-dj-mcp"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir / "agentic_crates.json"

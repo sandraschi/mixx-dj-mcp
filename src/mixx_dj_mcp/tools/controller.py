@@ -1,10 +1,8 @@
 import os
 import re
-import json
-import shutil
-import subprocess
 from pathlib import Path
 from typing import Any, Literal
+
 from fastmcp import FastMCP
 from rich.console import Console
 
@@ -80,9 +78,9 @@ def _detect_usb_midi_devices() -> list[dict]:
     devices = []
     try:
         import winreg
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-            r"SYSTEM\CurrentControlSet\Enum\USB")
-        
+
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Enum\USB")
+
         i = 0
         while True:
             try:
@@ -92,37 +90,41 @@ def _detect_usb_midi_devices() -> list[dict]:
                 if match:
                     vid = int(match.group(1), 16)
                     pid = int(match.group(2), 16)
-                    
+
                     # Check if this PID/VID is in our database
                     db_entry = CONTROLLER_DB.get((vid, pid))
                     if db_entry:
                         try:
                             subkey = winreg.OpenKey(key, subkey_name)
                             parent_id = winreg.QueryValueEx(subkey, "ParentIdPrefix")[0]
-                            devices.append({
-                                "vid": vid,
-                                "pid": pid,
-                                "mapping": db_entry[0],
-                                "manufacturer": db_entry[1],
-                                "model": db_entry[2],
-                                "parent_id": parent_id,
-                            })
+                            devices.append(
+                                {
+                                    "vid": vid,
+                                    "pid": pid,
+                                    "mapping": db_entry[0],
+                                    "manufacturer": db_entry[1],
+                                    "model": db_entry[2],
+                                    "parent_id": parent_id,
+                                }
+                            )
                             winreg.CloseKey(subkey)
                         except (FileNotFoundError, OSError):
-                            devices.append({
-                                "vid": vid,
-                                "pid": pid,
-                                "mapping": db_entry[0],
-                                "manufacturer": db_entry[1],
-                                "model": db_entry[2],
-                            })
+                            devices.append(
+                                {
+                                    "vid": vid,
+                                    "pid": pid,
+                                    "mapping": db_entry[0],
+                                    "manufacturer": db_entry[1],
+                                    "model": db_entry[2],
+                                }
+                            )
                 i += 1
             except (FileNotFoundError, OSError):
                 break
         winreg.CloseKey(key)
     except Exception as e:
         console.print(f"[yellow]USB detection error: {e}[/yellow]")
-    
+
     return devices
 
 
@@ -131,16 +133,18 @@ def _get_installed_mappings() -> list[dict]:
     controllers_dir = _get_mixxx_controllers_dir()
     if not controllers_dir:
         return []
-    
+
     mappings = []
     for xml_file in sorted(controllers_dir.glob("*.midi.xml")):
         name = xml_file.stem.replace(".midi", "")
         js_file = controllers_dir / f"{name}-scripts.js"
-        mappings.append({
-            "name": name,
-            "xml": str(xml_file.name),
-            "script": js_file.name if js_file.exists() else None,
-        })
+        mappings.append(
+            {
+                "name": name,
+                "xml": str(xml_file.name),
+                "script": js_file.name if js_file.exists() else None,
+            }
+        )
     return mappings
 
 
@@ -154,17 +158,17 @@ def register_controller_tools(mcp: FastMCP):
     ) -> dict[str, Any]:
         """
         DJ controller auto-detection and mapping management.
-        
+
         SUPPORTED OPERATIONS:
         - detect: Scan USB for connected DJ controllers
         - install: Install a Mixxx mapping for a detected controller
         - list: List all installed Mixxx controller mappings
         - status: Show current controller configuration
         - download: Download community mappings from GitHub
-        
+
         Returns:
             Dict with operation result
-        
+
         Examples:
             mixx_controller("detect")
             mixx_controller("list")
@@ -184,7 +188,7 @@ def register_controller_tools(mcp: FastMCP):
                     "message": "No known DJ controllers detected. Connect your controller and try again.",
                     "data": {"controllers": []},
                 }
-            
+
             elif operation == "list":
                 mappings = _get_installed_mappings()
                 return {
@@ -192,18 +196,18 @@ def register_controller_tools(mcp: FastMCP):
                     "message": f"{len(mappings)} mappings installed",
                     "data": {"mappings": mappings},
                 }
-            
+
             elif operation == "install":
                 controllers_dir = _get_mixxx_controllers_dir()
                 if not controllers_dir:
                     return {"success": False, "message": "Mixxx not found", "data": {}}
-                
+
                 return {
                     "success": True,
                     "message": f"Mapping '{mapping_name}' ready. Select it in Mixxx Preferences → MIDI/OSC.",
                     "data": {"mapping": mapping_name, "path": str(controllers_dir)},
                 }
-            
+
             elif operation == "status":
                 detected = _detect_usb_midi_devices()
                 mappings = _get_installed_mappings()
@@ -216,17 +220,17 @@ def register_controller_tools(mcp: FastMCP):
                         "controllers_db_size": len(CONTROLLER_DB),
                     },
                 }
-            
+
             elif operation == "download":
                 return {
                     "success": True,
                     "message": "Community mapping download from GitHub coming soon. Use Mixxx Preferences → MIDI/OSC → Load Mapping for now.",
                     "data": {"note": "Mixxx ships with ~200 built-in mappings"},
                 }
-            
+
             else:
                 return {"success": False, "message": f"Unknown operation: {operation}", "data": {}}
-        
+
         except Exception as e:
             console.print(f"[red]Error in mixx_controller: {e}[/red]")
             return {"success": False, "message": str(e), "data": {}}

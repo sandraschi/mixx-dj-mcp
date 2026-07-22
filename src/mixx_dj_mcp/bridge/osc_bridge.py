@@ -9,7 +9,7 @@ from pythonosc.osc_server import AsyncIOOSCUDPServer
 from rich.console import Console
 
 from ..config import MixxConfig
-from .protocol import DECK_OBSERVED_COS, OSC_IN_PORT, OSC_OUT_PORT
+from .protocol import DECK_OBSERVED_COS, OSC_IN_PORT
 
 logger = logging.getLogger(__name__)
 console = Console(file=__import__("sys").stderr)

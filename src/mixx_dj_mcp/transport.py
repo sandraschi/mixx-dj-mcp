@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import logging
 import os
 from typing import Literal
@@ -33,15 +32,9 @@ def create_argument_parser(server_name: str) -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     transport_group = parser.add_mutually_exclusive_group()
-    transport_group.add_argument(
-        "--stdio", action="store_true", help="Run in STDIO mode (default)"
-    )
-    transport_group.add_argument(
-        "--http", action="store_true", help="Run in HTTP Streamable mode"
-    )
-    transport_group.add_argument(
-        "--sse", action="store_true", help="Run in SSE mode (deprecated)"
-    )
+    transport_group.add_argument("--stdio", action="store_true", help="Run in STDIO mode (default)")
+    transport_group.add_argument("--http", action="store_true", help="Run in HTTP Streamable mode")
+    transport_group.add_argument("--sse", action="store_true", help="Run in SSE mode (deprecated)")
     parser.add_argument("--host", default=None, help="Host to bind to")
     parser.add_argument("--port", type=int, default=None, help="Port to listen on")
     parser.add_argument("--path", default=None, help="HTTP endpoint path")
@@ -96,8 +89,17 @@ async def run_stdio_async(mcp) -> None:
 
 
 __all__ = [
-    "ENV_HOST", "ENV_PATH", "ENV_PORT", "ENV_TRANSPORT",
-    "TransportType", "create_argument_parser", "get_transport_config",
-    "resolve_config", "resolve_transport",
-    "run_http", "run_http_async", "run_stdio", "run_stdio_async",
+    "ENV_HOST",
+    "ENV_PATH",
+    "ENV_PORT",
+    "ENV_TRANSPORT",
+    "TransportType",
+    "create_argument_parser",
+    "get_transport_config",
+    "resolve_config",
+    "resolve_transport",
+    "run_http",
+    "run_http_async",
+    "run_stdio",
+    "run_stdio_async",
 ]

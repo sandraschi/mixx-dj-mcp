@@ -82,6 +82,9 @@ target-version = "py312"
 select = ["E", "F", "W", "I", "B", "S", "UP", "RUF"]
 ignore = ["S101", "B008"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/mixx_dj_mcp/bridge/osc_bridge.py" = ["RUF059"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

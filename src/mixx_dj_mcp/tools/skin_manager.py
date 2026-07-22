@@ -1,9 +1,10 @@
-import os
 import json
+import os
 import re
 import shutil
 from pathlib import Path
 from typing import Any, Literal
+
 from fastmcp import FastMCP
 from rich.console import Console
 
@@ -198,6 +199,7 @@ def _update_skin_manifest(skin_path: Path, name: str, colors: dict):
 
 async def _parse_prompt_for_colors(prompt: str) -> dict:
     """Extract a hex color palette from a natural language prompt using Ollama."""
+    import httpx
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.post(
@@ -238,7 +240,6 @@ async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str
         return 0
 
     # Probe inkscape-mcp availability
-    inkscape_available = False
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             r = await client.post(
@@ -253,7 +254,9 @@ async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str
             )
             if r.status_code == 200:
                 resp = r.json()
-                inkscape_available = resp.get("result", {}).get("content", [{}])[0].get("text", "").find("success") > -1 or resp.get("result", {}).get("success", False)
+                resp.get("result", {}).get("content", [{}])[0].get("text", "").find("success") > -1 or resp.get(
+                    "result", {}
+                ).get("success", False)
     except Exception:
         pass
 
@@ -291,7 +294,6 @@ async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str
 
 async def _generate_skin(name: str, prompt: str, base_skin: str) -> dict:
     """Generate a Mixxx skin by cloning a base and recoloring via inkscape-mcp."""
-    import httpx
 
     colors = await _parse_prompt_for_colors(prompt)
 
@@ -392,10 +394,14 @@ def register_skin_tools(mcp: FastMCP):
                 for sid, info in AVAILABLE_SKINS.items():
                     score = 0
                     if q:
-                        if q in sid.lower(): score += 3
-                        if q in info["name"].lower(): score += 3
-                        if q in info["author"].lower(): score += 2
-                        if q in info["description"].lower(): score += 1
+                        if q in sid.lower():
+                            score += 3
+                        if q in info["name"].lower():
+                            score += 3
+                        if q in info["author"].lower():
+                            score += 2
+                        if q in info["description"].lower():
+                            score += 1
 
                     if tag_list:
                         skin_tags = [t.lower() for t in info.get("tags", [])]
@@ -432,7 +438,11 @@ def register_skin_tools(mcp: FastMCP):
                     }
 
                 if install_path.exists():
-                    return {"success": True, "message": f"Skin '{skin_id}' already installed at {install_path}", "data": {"skin": skin_id, "path": str(install_path)}}
+                    return {
+                        "success": True,
+                        "message": f"Skin '{skin_id}' already installed at {install_path}",
+                        "data": {"skin": skin_id, "path": str(install_path)},
+                    }
 
                 return {
                     "success": False,

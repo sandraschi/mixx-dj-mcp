@@ -21,6 +21,7 @@ def _check_demucs() -> bool:
         return _DEMUCS_AVAILABLE
     try:
         import demucs  # noqa: F401
+
         _DEMUCS_AVAILABLE = True
     except ImportError:
         _DEMUCS_AVAILABLE = False
@@ -31,9 +32,15 @@ async def _run_separate(track_path: str, output_dir: str) -> dict:
     """Run Demucs stem separation via subprocess."""
     track_name = Path(track_path).stem
     cmd = [
-        "uv", "run", "python", "-m", "demucs",
-        "--two-stems", "vocals",
-        "-o", output_dir,
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "demucs",
+        "--two-stems",
+        "vocals",
+        "-o",
+        output_dir,
         track_path,
     ]
     try:
@@ -42,7 +49,7 @@ async def _run_separate(track_path: str, output_dir: str) -> dict:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
+        _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
 
         if proc.returncode != 0:
             return {"success": False, "message": f"Demucs failed: {stderr.decode()[:500]}", "data": {}}
@@ -56,7 +63,7 @@ async def _run_separate(track_path: str, output_dir: str) -> dict:
         }
         return {"success": True, "message": "Stem separation complete", "data": {"stems": stem_files}}
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"success": False, "message": "Demucs timed out after 300s", "data": {}}
 
 
@@ -75,7 +82,7 @@ async def _load_stems_to_samplers(stems: dict, bridge) -> list[dict]:
 async def _get_track_path(deck: int, bridge) -> str | None:
     """Get current track path from bridge state. Best-effort via OSC state."""
     track_samples = bridge.get_state("track_samples", deck, default=None)
-    track_samplerate = bridge.get_state("track_samplerate", deck, default=None)
+    bridge.get_state("track_samplerate", deck, default=None)
     if track_samples is not None and float(track_samples) > 0:
         return None
     return None
@@ -155,7 +162,11 @@ async def mixx_stems(
             }
 
         elif operation == "load_stems":
-            return {"success": False, "message": "load_stems requires stem file paths from a prior separate operation. Call separate first to generate stems, then provide the result paths.", "data": {}}
+            return {
+                "success": False,
+                "message": "load_stems requires stem file paths from a prior separate operation. Call separate first to generate stems, then provide the result paths.",
+                "data": {},
+            }
 
         elif operation == "transition":
             bridge.send(f"/deck/{deck_a}/filterLow", 0.0)
