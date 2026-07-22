@@ -76,6 +76,7 @@ export default function Chat() {
   const [providerName, setProviderName] = useState("Ollama");
   const [providerHost, setProviderHost] = useState(":11434");
   const [modelName, setModelName] = useState("");
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,7 +114,10 @@ export default function Chat() {
           setProviderStatus(data.status === "online" ? "online" : "offline");
           setProviderName(data.provider || "unknown");
           setProviderHost(data.host || "");
-          if (data.models?.length) setModelName(data.models[0]);
+          if (data.models?.length) {
+            setModelName(data.models[0]);
+            setAvailableModels(data.models);
+          }
         } else {
           setProviderStatus("offline");
         }
@@ -238,11 +242,9 @@ export default function Chat() {
             data-testid="model-input"
           >
             <option value="">auto</option>
-            <option value="llama3.2:3b">llama3.2:3b</option>
-            <option value="llama3.1:8b">llama3.1:8b</option>
-            <option value="qwen2.5:7b">qwen2.5:7b</option>
-            <option value="gemma3:12b">gemma3:12b</option>
-            <option value="mistral:7b">mistral:7b</option>
+            {availableModels.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
           </select>
         </div>
         <div className="flex items-center gap-1" data-testid="chat-controls">

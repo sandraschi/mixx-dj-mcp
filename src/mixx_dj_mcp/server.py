@@ -202,12 +202,67 @@ async def deck_sync(deck_id: int):
     return {"success": True, "deck": deck_id}
 
 
+async def _try_execute_command(msg: str) -> dict | None:
+    """Try to execute a DJ command from natural language. Returns response dict if matched."""
+    bridge = get_osc_bridge()
+    msg_lower = msg.lower()
+    deck_match = re.search(r"deck\s*(\d)", msg_lower)
+    deck = int(deck_match.group(1)) if deck_match else 1
+
+    if ("load" in msg_lower and ("track" in msg_lower or "song" in msg_lower)):
+        return {"message": "Use the Library page to search and click 'Load to N' to send the track path via the REST API."}
+
+    if "play" in msg_lower and "pause" not in msg_lower:
+        bridge.send(f"/deck/{deck}/play", 1.0)
+        return {"message": f"Playing deck {deck}.", "executed": True, "deck": deck}
+    if "stop" in msg_lower:
+        bridge.send(f"/deck/{deck}/play", 0.0)
+        return {"message": f"Stopped deck {deck}.", "executed": True, "deck": deck}
+    if "sync" in msg_lower:
+        bridge.send(f"/deck/{deck}/sync_enabled", 1.0)
+        return {"message": f"Sync enabled on deck {deck}.", "executed": True, "deck": deck}
+
+    if "crossfader" in msg_lower or "fade" in msg_lower:
+        val = 0.0
+        if "left" in msg_lower: val = -1.0
+        elif "right" in msg_lower: val = 1.0
+        bridge.send("/crossfader", val)
+        return {"message": f"Crossfader set to {val}.", "executed": True}
+
+    if "cue" in msg_lower:
+        bridge.send(f"/deck/{deck}/cue_play", 1.0)
+        return {"message": f"Cue triggered on deck {deck}.", "executed": True, "deck": deck}
+
+    if "bpm" in msg_lower:
+        bpm = bridge.get_state("bpm", deck, 128.0)
+        return {"message": f"Deck {deck} BPM: {bpm}", "data": {"bpm": bpm, "deck": deck}}
+
+    if "volume" in msg_lower and "deck" in msg_lower:
+        val = 0.8
+        for word in msg_lower.split():
+            w = word.replace("%", "").replace("pct", "")
+            try:
+                pct = float(w)
+                if pct > 1: val = pct / 100
+                else: val = pct
+            except: pass
+        bridge.send(f"/deck/{deck}/volume", min(1.0, max(0.0, val)))
+        return {"message": f"Deck {deck} volume set to {val:.0%}.", "executed": True, "deck": deck, "volume": val}
+
+    return None
+
+
 @fastapi_app.post("/api/llm/chat")
 async def llm_chat(body: dict):
-    """Chat endpoint — tries Ollama, falls back to command execution."""
+    """Chat endpoint — executes commands via OSC, falls back to Ollama."""
     messages = body.get("messages", [])
     model = body.get("model", "llama3.2:3b")
     user_msg = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
+
+    # Execute commands first, regardless of LLM status
+    cmd_result = await _try_execute_command(user_msg)
+    if cmd_result:
+        return cmd_result
 
     # Try local Ollama with requested model
     try:
@@ -223,51 +278,8 @@ async def llm_chat(body: dict):
     except Exception:
         pass
 
-    # Fallback: execute commands directly via OSC bridge
-    msg = user_msg.lower()
-    bridge = get_osc_bridge()
-    deck_match = re.search(r"deck\s*(\d)", msg)
-    deck = int(deck_match.group(1)) if deck_match else 1
-
-    if "load" in msg and ("track" in msg or "song" in msg):
-        return {"message": "Use the Library page to search and click 'Load to N' to send the track path via the REST API."}
-
-    if "play" in msg and "pause" not in msg:
-        bridge.send(f"/deck/{deck}/play", 1.0)
-        return {"message": f"Playing deck {deck}.", "executed": True}
-    if "stop" in msg:
-        bridge.send(f"/deck/{deck}/play", 0.0)
-        return {"message": f"Stopped deck {deck}.", "executed": True}
-
-    if "sync" in msg:
-        bridge.send(f"/deck/{deck}/sync_enabled", 1.0)
-        return {"message": f"Sync enabled on deck {deck}.", "executed": True}
-
-    if "crossfader" in msg or "fade" in msg:
-        val = 0.0
-        if "left" in msg or "deck 1" in msg:
-            val = -1.0
-        elif "right" in msg or "deck 2" in msg or "deck 3" in msg or "deck 4" in msg:
-            val = 1.0
-        bridge.send("/crossfader", val)
-        return {"message": f"Crossfader set to {val}.", "executed": True}
-
-    if "bpm" in msg and "deck" in msg:
-        bpm = bridge.get_state("bpm", deck, 128.0)
-        return {"message": f"Deck {deck} BPM: {bpm}", "data": {"bpm": bpm, "deck": deck}}
-
-    if "search" in msg:
-        return {"message": "Use the Library search bar above or: mixx_library(operation='search', query='...')"}
-
-    if "stop" in msg:
-        bridge.send(f"/deck/{deck}/play", 0.0)
-        return {"message": f"Deck {deck} stopped.", "executed": True}
-
-    if "clear" in msg or "reset" in msg:
-        return {"message": "Specify what to clear: effects, cues, or use the Decks page."}
-
-    # Generic fallback
-    return {"message": f"No LLM provider. Try: load track, play deck {deck}, sync deck {deck}, crossfader to left/right, search for..."}
+    # Ollama failed — not a command, not an LLM request
+    return {"message": "Not recognized as a DJ command and no LLM available. Try: 'play deck 1', 'sync deck 2', 'crossfader left', 'load track to deck 1' from Library."}
 
 
 @fastapi_app.post("/api/v1/deck/{deck_id}/cue")
