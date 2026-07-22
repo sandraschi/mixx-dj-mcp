@@ -165,6 +165,29 @@ async def llm_discover():
     return {"provider": "none", "status": "offline", "models": []}
 
 
+@fastapi_app.get("/api/v1/fork")
+async def fork_info():
+    """Detect whether connected DJ software is mixxxxx (video fork) or vanilla Mixxx."""
+    bridge = get_osc_bridge()
+    # Probe for mixxxxx-specific COs
+    has_video = bridge.get_state("video_enabled", 1, default=None) is not None
+    has_phase = bridge.get_state("phase", 1, default=None) is not None
+    has_export = bridge.get_state("export_rekordbox", 1, default=None) is not None
+    return {
+        "fork": "mixxxxx" if (has_video or has_phase) else "mixxx",
+        "connected": bridge.is_connected(),
+        "features": {
+            "video": has_video,
+            "phase_indicator": has_phase,
+            "rekordbox_export": has_export,
+            "serato_export": True,  # always available in mixxxxx build
+            "virtualdj_export": True,
+            "stem_separation": False,  # option-gated
+        },
+        "message": "mixxxxx detected" if has_video else "vanilla Mixxx detected (mixxxxx features unavailable)",
+    }
+
+
 @fastapi_app.get("/api/settings")
 async def api_settings():
     return {

@@ -7,7 +7,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useStore } from "../lib/store";
-import { fetchHealth, fetchDeckStatus } from "../lib/api";
+import { API_BASE, fetchHealth, fetchDeckStatus } from "../lib/api";
 
 export default function Dashboard() {
   const backendStatus = useStore((s) => s.backendStatus);
@@ -23,6 +23,7 @@ export default function Dashboard() {
     tool_count: number;
   } | null>(null);
   const [restarting, setRestarting] = useState(false);
+  const [forkData, setForkData] = useState<{ fork: string; features: Record<string, boolean> } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -30,11 +31,15 @@ export default function Dashboard() {
       setHealthData(h);
       setBackendStatus("connected");
       try {
-        const ds = await fetchDeckStatus();
+        const [ds, fk] = await Promise.all([
+          fetchDeckStatus(),
+          fetch(`${API_BASE}/api/v1/fork`).then((r) => r.ok ? r.json() : null),
+        ]);
         setDecks(ds.decks);
         setCrossfader(ds.crossfader);
+        setForkData(fk);
       } catch {
-        // deck status optional
+        // optional
       }
     } catch {
       setBackendStatus("error");
@@ -140,6 +145,46 @@ export default function Dashboard() {
             </p>
             <p className="text-xs text-slate-500">since last restart</p>
           </div>
+          {forkData && (
+            <div
+              data-testid="kpi-mixx-status"
+              className={`rounded-xl border p-4 col-span-3 ${
+                forkData.fork === "mixxxxx"
+                  ? "border-purple-800 bg-purple-900/20"
+                  : "border-slate-800 bg-slate-900/50"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">
+                    DJ Engine
+                  </span>
+                  <p className="text-lg font-semibold text-slate-100 mt-1">
+                    {forkData.fork === "mixxxxx" ? "Mixxxxx" : "Mixxx (vanilla)"}
+                  </p>
+                </div>
+                {forkData.fork === "mixxxxx" && (
+                  <span className="px-2 py-1 rounded text-xs font-mono bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                    Video fork
+                  </span>
+                )}
+                {forkData.fork === "mixxx" && (
+                  <span className="px-2 py-1 rounded text-xs text-slate-500 bg-slate-800">
+                    No video support
+                  </span>
+                )}
+              </div>
+              {forkData.fork === "mixxxxx" && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {Object.entries(forkData.features).filter(([, v]) => v).map(([k]) => (
+                    <span key={k} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
+                      {k.replace(/_/g, " ")}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
