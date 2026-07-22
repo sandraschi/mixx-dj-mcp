@@ -3,6 +3,7 @@ import sys
 import time
 from pathlib import Path
 
+import httpx
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from fastmcp import FastMCP
@@ -178,6 +179,48 @@ async def deck_sync(deck_id: int):
     bridge = get_osc_bridge()
     bridge.send(f"/deck/{deck_id}/sync_enabled", 1.0)
     return {"success": True, "deck": deck_id}
+
+
+@fastapi_app.post("/api/llm/chat")
+async def llm_chat(body: dict):
+    """Chat endpoint — tries Ollama, falls back to MCP tool guidance."""
+    messages = body.get("messages", [])
+    user_msg = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
+
+    # Try local Ollama
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post("http://localhost:11434/api/chat", json={
+                "model": "llama3.2:3b",
+                "messages": messages,
+                "stream": False,
+            })
+            if r.status_code == 200:
+                reply = r.json().get("message", {}).get("content", "")
+                return {"message": reply}
+    except Exception:
+        pass
+
+    # Fallback: detect DJ commands and route to tools
+    tool_hints = {
+        "load": "Use the Library page (search + Load to deck) or: mixx_deck(operation='load', deck=1, track_path='...')",
+        "play": "mixx_deck(operation='play_pause', deck=1)",
+        "sync": "mixx_deck(operation='sync_enable', deck=1, enable=True)",
+        "crossfader": "mixx_mixer(operation='crossfader_set', value=0.0)",
+        "bpm": "mixx_library(operation='get_bpm', deck=1)",
+        "search": "Use the Library search bar, or: mixx_library(operation='search', query='...')",
+        "effect": "mixx_effects(operation='chain_load', rack=1, unit=1, effect='Reverb')",
+        "stem": "mixx_stems(operation='separate', deck=1)",
+        "crate": "mixx_crate(operation='list')",
+    }
+    hints = []
+    for keyword, hint in tool_hints.items():
+        if keyword in user_msg.lower():
+            hints.append(hint)
+
+    if hints:
+        return {"message": f"No LLM provider available (install Ollama).\n\nYou can use these MCP tools directly:\n" + "\n".join(f"- `{h}`" for h in hints)}
+    return {"message": "No LLM provider available. Install Ollama (localhost:11434) or use the MCP tools directly from your AI assistant."}
 
 
 @fastapi_app.post("/api/v1/deck/{deck_id}/cue")
