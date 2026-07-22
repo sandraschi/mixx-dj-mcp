@@ -12,6 +12,7 @@ import { apiPost } from "../lib/api";
 import PlexPanel from "../components/PlexPanel";
 import SFXPanel from "../components/SFXPanel";
 import DeckStrip from "../components/DeckStrip";
+import Visualizer from "../components/Visualizer";
 import type { CockpitMessage } from "../lib/types";
 
 export default function Cockpit() {
@@ -111,6 +112,9 @@ export default function Cockpit() {
 
       {/* Deck status strip */}
       <DeckStrip />
+
+      {/* MilkDrop Visualizer */}
+      <Visualizer className="h-32 w-full" />
 
       {/* AI Assistant chat bar */}
       <motion.div
