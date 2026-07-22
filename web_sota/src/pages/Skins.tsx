@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search, Palette, Download, Check, Tag, User, Hash, ExternalLink } from "lucide-react";
+import { API_BASE } from "../lib/api";
 
 interface SkinEntry {
   id: string;
@@ -125,7 +126,13 @@ export default function Skins() {
 
   const handleInstall = async (skin: SkinEntry) => {
     setInstalling(skin.id);
-    await new Promise((r) => setTimeout(r, 1200));
+    try {
+      await fetch(`${API_BASE}/api/v1/tools/call`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "mixx_skin", arguments: { operation: "install", skin_id: skin.id } }),
+      });
+    } catch {}
     setInstalling(null);
   };
 
