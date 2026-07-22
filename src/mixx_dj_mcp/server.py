@@ -144,6 +144,56 @@ async def deck_status():
     return {"decks": decks, "crossfader": bridge.get_global_state("crossfader", 0.0)}
 
 
+# Music generation — lazy-loaded MusicGen via HuggingFace
+_music_model = None
+
+async def _ensure_music_model():
+    global _music_model
+    if _music_model is not None:
+        return _music_model
+    try:
+        from transformers import AutoProcessor, MusicGenForConditionalGeneration
+        import torch
+        processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
+        model = MusicGenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = model.to(device)
+        _music_model = (processor, model, device)
+        console.print(f"[green]MusicGen loaded on {device}[/green]")
+    except Exception as e:
+        console.print(f"[yellow]MusicGen load failed: {e}[/yellow]")
+        _music_model = False  # sentinel
+    return _music_model
+
+
+@fastapi_app.post("/api/music/generate")
+async def music_generate(body: dict):
+    """Generate music using MusicGen (HuggingFace). First call loads model (~2GB)."""
+    prompt = body.get("prompt", "")
+    duration = int(body.get("duration", 15))
+    if not prompt:
+        return {"error": "prompt required"}
+
+    result = await _ensure_music_model()
+    if not result:
+        return {"error": "MusicGen model not available. Install with: uv add transformers torch scipy"}
+
+    processor, model, device = result
+    try:
+        import torch, scipy.io.wavfile, tempfile, os
+        inputs = processor(text=[prompt], padding=True, return_tensors="pt").to(device)
+        audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3.0, max_new_tokens=int(duration * 50))
+
+        out_dir = tempfile.mkdtemp()
+        out_path = os.path.join(out_dir, "generated.wav")
+        sampling_rate = model.config.audio_encoder.sampling_rate
+        scipy.io.wavfile.write(out_path, rate=sampling_rate, data=audio_values[0, 0].cpu().numpy())
+
+        return {"success": True, "file": out_path, "duration": duration, "prompt": prompt, "model": "musicgen-small", "device": device}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @fastapi_app.get("/api/llm/discover")
 async def llm_discover():
     """Detect local LLM provider."""

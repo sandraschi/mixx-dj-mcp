@@ -36,6 +36,8 @@ dependencies = [
     "rich>=13.0.0",
     "psutil>=5.9.0",
     "demucs>=4.1.0",
+    "transformers>=4.40.0",
+    "scipy>=1.17.1",
 ]
 
 [project.urls]

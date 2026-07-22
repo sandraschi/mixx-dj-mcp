@@ -30,6 +30,8 @@ Requires-Dist: ruff>=0.14.6
 Requires-Dist: rich>=13.0.0
 Requires-Dist: psutil>=5.9.0
 Requires-Dist: demucs>=4.1.0
+Requires-Dist: transformers>=4.40.0
+Requires-Dist: scipy>=1.17.1
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.24.0; extra == "dev"

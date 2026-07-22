@@ -16,6 +16,20 @@ export default function SongGenPanel() {
     setLoading(true);
     setError("");
     setResult(null);
+    // Try local MusicGen first (faster, no API key needed)
+    try {
+      const r = await fetch(`${API_BASE}/api/music/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), duration: 30 }),
+        signal: AbortSignal.timeout(300000),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.success) { setResult(data); setLoading(false); return; }
+      }
+    } catch {}
+    // Fallback: songgeneration-mcp
     try {
       const r = await fetch(`${SONG_API}/api/v1/generate`, {
         method: "POST",
@@ -27,7 +41,7 @@ export default function SongGenPanel() {
       const data = await r.json();
       setResult(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Connection failed");
+      setError(e instanceof Error ? e.message : "MusicGen not loaded (first call downloads ~2GB model) and songgeneration-mcp unreachable. Try again in a minute.");
     }
     setLoading(false);
   }, [prompt]);
