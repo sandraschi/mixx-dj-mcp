@@ -201,26 +201,51 @@ async def llm_chat(body: dict):
     except Exception:
         pass
 
-    # Fallback: detect DJ commands and route to tools
-    tool_hints = {
-        "load": "Use the Library page (search + Load to deck) or: mixx_deck(operation='load', deck=1, track_path='...')",
-        "play": "mixx_deck(operation='play_pause', deck=1)",
-        "sync": "mixx_deck(operation='sync_enable', deck=1, enable=True)",
-        "crossfader": "mixx_mixer(operation='crossfader_set', value=0.0)",
-        "bpm": "mixx_library(operation='get_bpm', deck=1)",
-        "search": "Use the Library search bar, or: mixx_library(operation='search', query='...')",
-        "effect": "mixx_effects(operation='chain_load', rack=1, unit=1, effect='Reverb')",
-        "stem": "mixx_stems(operation='separate', deck=1)",
-        "crate": "mixx_crate(operation='list')",
-    }
-    hints = []
-    for keyword, hint in tool_hints.items():
-        if keyword in user_msg.lower():
-            hints.append(hint)
+    # Fallback: execute commands directly via OSC bridge
+    msg = user_msg.lower()
+    bridge = get_osc_bridge()
+    deck_match = re.search(r"deck\s*(\d)", msg)
+    deck = int(deck_match.group(1)) if deck_match else 1
 
-    if hints:
-        return {"message": f"No LLM provider available (install Ollama).\n\nYou can use these MCP tools directly:\n" + "\n".join(f"- `{h}`" for h in hints)}
-    return {"message": "No LLM provider available. Install Ollama (localhost:11434) or use the MCP tools directly from your AI assistant."}
+    if "load" in msg and ("track" in msg or "song" in msg):
+        return {"message": "Use the Library page to search and click 'Load to N' to send the track path via the REST API."}
+
+    if "play" in msg and "pause" not in msg:
+        bridge.send(f"/deck/{deck}/play", 1.0)
+        return {"message": f"Playing deck {deck}.", "executed": True}
+    if "stop" in msg:
+        bridge.send(f"/deck/{deck}/play", 0.0)
+        return {"message": f"Stopped deck {deck}.", "executed": True}
+
+    if "sync" in msg:
+        bridge.send(f"/deck/{deck}/sync_enabled", 1.0)
+        return {"message": f"Sync enabled on deck {deck}.", "executed": True}
+
+    if "crossfader" in msg or "fade" in msg:
+        val = 0.0
+        if "left" in msg or "deck 1" in msg:
+            val = -1.0
+        elif "right" in msg or "deck 2" in msg or "deck 3" in msg or "deck 4" in msg:
+            val = 1.0
+        bridge.send("/crossfader", val)
+        return {"message": f"Crossfader set to {val}.", "executed": True}
+
+    if "bpm" in msg and "deck" in msg:
+        bpm = bridge.get_state("bpm", deck, 128.0)
+        return {"message": f"Deck {deck} BPM: {bpm}", "data": {"bpm": bpm, "deck": deck}}
+
+    if "search" in msg:
+        return {"message": "Use the Library search bar above or: mixx_library(operation='search', query='...')"}
+
+    if "stop" in msg:
+        bridge.send(f"/deck/{deck}/play", 0.0)
+        return {"message": f"Deck {deck} stopped.", "executed": True}
+
+    if "clear" in msg or "reset" in msg:
+        return {"message": "Specify what to clear: effects, cues, or use the Decks page."}
+
+    # Generic fallback
+    return {"message": f"No LLM provider. Try: load track, play deck {deck}, sync deck {deck}, crossfader to left/right, search for..."}
 
 
 @fastapi_app.post("/api/v1/deck/{deck_id}/cue")
