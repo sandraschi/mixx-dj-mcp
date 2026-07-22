@@ -12,13 +12,13 @@ from rich.console import Console
 console = Console(file=__import__("sys").stderr)
 
 DAVINCI_RESOLVE_API = os.getenv("DAVINCI_RESOLVE_API", "http://127.0.0.1:10843")
-REAPER_API = os.getenv("REAPER_API", "http://127.0.0.1:10796")
+REAPER_API = os.getenv("REAPER_API", "http://127.0.0.1:10797")
 
 
 def register_daw_tools(mcp: FastMCP):
     @mcp.tool()
     async def mixx_daw(
-        operation: Literal["export_stems", "export_session", "send_to_fairlight"],
+        operation: Literal["export_stems", "export_session", "send_to_fairlight", "send_to_reaper"],
         source_dir: str = "",
         output_dir: str = "",
         session_name: str = "",
@@ -34,6 +34,7 @@ def register_daw_tools(mcp: FastMCP):
         - export_stems: Copy stem WAVs to a DAW project directory
         - export_session: Write a session metadata JSON for DAW import
         - send_to_fairlight: Send stems to DaVinci Resolve's Fairlight page via REST API
+        - send_to_reaper: Send stems to Reaper via reaper-mcp REST API (POST /api/v1/project/import_media)
 
         Returns:
             Dict with export result and file paths
@@ -118,6 +119,42 @@ def register_daw_tools(mcp: FastMCP):
                 return {
                     "success": True,
                     "message": f"Sent {len(imported)}/{len(wav_files)} stems to Fairlight",
+                    "data": {"imported": imported, "total": len(wav_files), "api": api},
+                }
+
+            elif operation == "send_to_reaper":
+                if not source_dir or not os.path.isdir(source_dir):
+                    return {"success": False, "message": "source_dir required", "data": {}}
+
+                src = Path(source_dir)
+                wav_files = list(src.rglob("*.wav"))
+                if not wav_files:
+                    return {"success": False, "message": "No WAV files found in source_dir", "data": {}}
+
+                api = REAPER_API
+                imported = []
+                try:
+                    async with httpx.AsyncClient(timeout=30) as client:
+                        for wav in wav_files:
+                            r = await client.post(
+                                f"{api}/api/v1/project/import_media",
+                                params={"file_path": str(wav)},
+                                timeout=30,
+                            )
+                            if r.status_code == 200:
+                                imported.append(str(wav.name))
+                            else:
+                                console.print(f"  [yellow]Reaper import failed for {wav.name}: {r.status_code}[/yellow]")
+                except httpx.ConnectError:
+                    return {
+                        "success": False,
+                        "message": f"Reaper MCP not reachable at {api}. Is reaper-mcp running?",
+                        "data": {"api_url": api, "files_found": len(wav_files)},
+                    }
+
+                return {
+                    "success": True,
+                    "message": f"Sent {len(imported)}/{len(wav_files)} stems to Reaper",
                     "data": {"imported": imported, "total": len(wav_files), "api": api},
                 }
 
