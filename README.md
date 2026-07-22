@@ -87,7 +87,7 @@ Opens at `http://127.0.0.1:11117` — 7 pages: Dashboard, Decks, Library, Effect
 
 | Tool | Operations | Description |
 |------|-----------|-------------|
-| `mixx_deck` (19 ops) | `play_pause`, `stop`, `load`, `cue_set`, `cue_play`, `loop_activate`, `loop_beat`, `beatloop`, `rate_set`, `rate_temp`, `sync_enable`, `sync_leader`, `seek`, `scratch`, `hotcue_activate`, `quantize`, `keylock`, `video_enable`, `video_fullscreen` | Full deck control for all 4 decks |
+| `mixx_deck` (19 ops) | `play_pause`, `stop`, `load`, `cue_set`, `cue_play`, `loop_activate`, `loop_beat`, `beatloop`, `rate_set`, `rate_temp`, `sync_enable`, `sync_leader`, `seek`, `scratch`, `hotcue_activate`, `quantize`, `keylock`, `video_enable`, `video_fullscreen` | Full deck control + video for all 4 decks |
 | `mixx_library` (8 ops) | `search`, `browse_crate`, `browse_playlist`, `load_selected`, `get_track_info`, `get_bpm`, `get_key`, `get_replay_gain` | Library search and navigation |
 | `mixx_effects` (7 ops) | `list_effects`, `chain_load`, `chain_clear`, `parameter_set`, `meta_set`, `quick_effect_set`, `effect_enable` | Effect chain and parameter control |
 | `mixx_mixer` (8 ops) | `crossfader_set`, `crossfader_curve`, `gain_set`, `eq_set`, `volume_set`, `headphone_cue`, `talkover`, `mic_gain` | Mixer channel control |

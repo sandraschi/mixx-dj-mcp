@@ -37,7 +37,7 @@ Agent (Claude/Cursor/opencode)
     ▼
 mixx-dj-mcp (FastMCP 3.4+)
     │
-    ├── mixx_deck(deck, operation, ...)          # 17 ops
+    ├── mixx_deck(deck, operation, ...)          # 19 ops
     ├── mixx_library(operation, ...)             # 8 ops
     ├── mixx_effects(rack, unit, operation, ...) # 7 ops
     └── mixx_mixer(deck, operation, ...)         # 8 ops
@@ -77,6 +77,8 @@ Full deck control for decks 1-4.
 | `hotcue_activate` | `deck`, `hotcue` | Activate hotcue (1-8) |
 | `quantize` | `deck`, `enable` | Toggle beat quantization |
 | `keylock` | `deck`, `enable` | Toggle keylock |
+| `video_enable` | `deck`, `enable` | Toggle video playback on/off |
+| `video_fullscreen` | `deck`, `enable` | Toggle video fullscreen on/off |
 
 **Return format:**
 ```json
@@ -176,6 +178,9 @@ Mixer channel control.
 | `/deck/[N]/quantize` | 1.0/0.0 | Toggle quantize |
 | `/deck/[N]/keylock` | 1.0/0.0 | Toggle keylock |
 | `/deck/[N]/scratch` | 1.0/0.0 | Toggle scratch mode |
+| `/deck/[N]/video_enabled` | 1.0/0.0 | Toggle video playback on/off |
+| `/deck/[N]/video_fullscreen` | 1.0/0.0 | Toggle video fullscreen window |
+| `/video_crossfader` | 0.0-1.0 | Global video crossfader blend |
 
 ### Deck EQ/Filter (`/deck/[1-4]/...`)
 
