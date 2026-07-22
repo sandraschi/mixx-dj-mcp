@@ -7,11 +7,21 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastmcp import FastMCP
+from pydantic import BaseModel
 from rich.console import Console
 
 from .bridge.osc_bridge import OscBridge
 from .config import MixxConfig
 from .http_app import create_app, mount_mcp
+
+class DeckLoadRequest(BaseModel):
+    track_path: str
+
+class PlayPauseRequest(BaseModel):
+    action: str = "toggle"
+
+class CueRequest(BaseModel):
+    mode: str = "cue"
 
 console = Console(file=sys.stderr)
 
@@ -127,6 +137,35 @@ async def api_settings():
         "http_port": config.http_port,
     }
 
+
+@fastapi_app.post("/api/v1/deck/{deck_id}/load")
+async def deck_load(deck_id: int, req: DeckLoadRequest):
+    bridge = get_osc_bridge()
+    bridge.send(f"/deck/{deck_id}/LoadTrack", req.track_path)
+    return {"success": True, "deck": deck_id, "track": req.track_path}
+
+@fastapi_app.post("/api/v1/deck/{deck_id}/play_pause")
+async def deck_play_pause(deck_id: int, req: PlayPauseRequest):
+    bridge = get_osc_bridge()
+    if req.action == "play":
+        bridge.send(f"/deck/{deck_id}/play", 1.0)
+    elif req.action == "pause":
+        bridge.send(f"/deck/{deck_id}/play", 0.0)
+    else:
+        bridge.send(f"/deck/{deck_id}/play", 1.0)
+    return {"success": True, "deck": deck_id, "action": req.action}
+
+@fastapi_app.post("/api/v1/deck/{deck_id}/sync")
+async def deck_sync(deck_id: int):
+    bridge = get_osc_bridge()
+    bridge.send(f"/deck/{deck_id}/sync_enabled", 1.0)
+    return {"success": True, "deck": deck_id}
+
+@fastapi_app.post("/api/v1/deck/{deck_id}/cue")
+async def deck_cue(deck_id: int, req: CueRequest):
+    bridge = get_osc_bridge()
+    bridge.send(f"/deck/{deck_id}/cue_play", 1.0)
+    return {"success": True, "deck": deck_id, "mode": req.mode}
 
 app = fastapi_app
 
