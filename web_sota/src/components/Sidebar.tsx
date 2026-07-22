@@ -7,6 +7,7 @@ import {
   Monitor,
   MessageSquare,
   Wrench,
+  Palette,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/effects", icon: Sparkles, label: "Effects" },
   { to: "/chat", icon: MessageSquare, label: "Chat" },
   { to: "/tools", icon: Wrench, label: "Tools" },
+  { to: "/skins", icon: Palette, label: "Skins" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

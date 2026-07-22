@@ -5,6 +5,7 @@ import Decks from "./pages/Decks";
 import Library from "./pages/Library";
 import Effects from "./pages/Effects";
 import Tools from "./pages/Tools";
+import Skins from "./pages/Skins";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Cockpit from "./pages/Cockpit";
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/effects" element={<Effects />} />
         <Route path="/cockpit" element={<Cockpit />} />
         <Route path="/tools" element={<Tools />} />
+        <Route path="/skins" element={<Skins />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
