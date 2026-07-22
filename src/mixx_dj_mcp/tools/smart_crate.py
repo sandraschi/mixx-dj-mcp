@@ -1,3 +1,5 @@
+import json
+from datetime import datetime
 from typing import Any, Literal
 
 from fastmcp import FastMCP
@@ -8,10 +10,13 @@ from ..bridge.osc_bridge import get_bridge
 def register_crate_tools(mcp: FastMCP):
     @mcp.tool()
     async def mixx_crate(
-        operation: Literal["create", "list", "delete", "add_track"],
+        operation: Literal["create", "list", "delete", "add_track", "create_agentic"],
         name: str = "",
         prompt: str = "",
         deck: int = 1,
+        rule: str = "",
+        max_tracks: int = 50,
+        update: str = "manual",
     ) -> dict[str, Any]:
         """
         Smart crate management for Mixxx.
@@ -23,6 +28,9 @@ def register_crate_tools(mcp: FastMCP):
         - list: List all crates in the library
         - delete: Delete a crate by name (requires name)
         - add_track: Add currently playing track on deck to a crate (requires name, deck)
+        - create_agentic: Create a self-curating crate with an LLM rule (requires name, rule)
+          Rules: "126-132 BPM, Dm or Em, 4+ stars, genre:tech house"
+          The crate auto-updates based on the rule when the server starts.
 
         ## Return Format
         {"success": bool, "message": str, "data": dict}
@@ -31,6 +39,7 @@ def register_crate_tools(mcp: FastMCP):
             mixx_crate("create", name="Peak Time", prompt="tech house 124-128 BPM D minor")
             mixx_crate("list")
             mixx_crate("add_track", name="Favorites", deck=1)
+            mixx_crate("create_agentic", name="Morning Warmup", rule="126-132 BPM, Dm or Em, 4+ stars, genre:tech house")
         """
         try:
             bridge = get_bridge()
@@ -47,7 +56,11 @@ def register_crate_tools(mcp: FastMCP):
                 }
 
             elif operation == "list":
-                return {"success": True, "message": "Use mixx_library(browse_crate) to browse", "data": {}}
+                data: dict[str, Any] = {"hint": "Use mixx_library(browse_crate) to browse"}
+                agentic = _list_agentic_crates()
+                if agentic:
+                    data["agentic_crates"] = [{"name": k, **v} for k, v in agentic.items()]
+                return {"success": True, "message": "Use mixx_library(browse_crate) to browse", "data": data}
 
             elif operation == "delete":
                 return {"success": False, "message": "Crate deletion not available via OSC", "data": {}}
@@ -57,6 +70,38 @@ def register_crate_tools(mcp: FastMCP):
                     "success": True,
                     "message": f"Add current deck {deck} track to crate '{name}' manually in Mixxx",
                     "data": {"crate": name, "deck": deck},
+                }
+
+            elif operation == "create_agentic":
+                if not name:
+                    return {"success": False, "message": "name required", "data": {}}
+                if not rule:
+                    return {"success": False, "message": "rule required (e.g. '126-132 BPM, Dm or Em, 4+ stars')", "data": {}}
+
+                rules_file = _get_rules_path()
+                rules = {}
+                if rules_file.exists():
+                    rules = json.loads(rules_file.read_text())
+
+                rules[name] = {
+                    "rule": rule,
+                    "max_tracks": max_tracks,
+                    "update": update,
+                    "created": str(datetime.now()),
+                }
+                rules_file.write_text(json.dumps(rules, indent=2))
+
+                search_query = await _prompt_to_search(rule)
+
+                return {
+                    "success": True,
+                    "message": f"Created agentic crate '{name}'. Rule: '{rule}'. Update: {update}",
+                    "data": {
+                        "crate": name,
+                        "rule": rule,
+                        "search_query": search_query,
+                        "update_frequency": update,
+                    }
                 }
 
             else:
@@ -107,3 +152,27 @@ async def _prompt_to_search(prompt: str) -> str:
             search_parts.append(word)
 
     return " ".join(search_parts) if search_parts else prompt
+
+
+def _get_rules_path():
+    import os
+    from pathlib import Path
+    data_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share")) / "mixx-dj-mcp"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir / "agentic_crates.json"
+
+
+def _list_agentic_crates() -> dict:
+    rules_file = _get_rules_path()
+    if rules_file.exists():
+        return json.loads(rules_file.read_text())
+    return {}
+
+
+def _delete_agentic_crate(name: str) -> bool:
+    rules = _list_agentic_crates()
+    if name in rules:
+        del rules[name]
+        _get_rules_path().write_text(json.dumps(rules, indent=2))
+        return True
+    return False

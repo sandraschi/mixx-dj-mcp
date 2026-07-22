@@ -4,10 +4,14 @@ import {
   Wifi,
   Moon,
   Info,
+  Package2,
 } from "lucide-react";
 import { API_BASE, fetchHealth } from "../lib/api";
+import { useStore } from "../lib/store";
 
 export default function Settings() {
+  const daniMode = useStore((s) => s.daniMode);
+  const setDaniMode = useStore((s) => s.setDaniMode);
   const [oscPort, setOscPort] = useState("5133");
   const [host, setHost] = useState("127.0.0.1");
   const [backendInfo, setBackendInfo] = useState<{
@@ -114,6 +118,30 @@ export default function Settings() {
             Dark mode is permanently enabled. Mixx-DJ-MCP uses a Slate-950 dark
             theme for optimal visibility in low-light DJ environments.
           </p>
+        </div>
+      </div>
+
+      <div className="border border-zinc-700 rounded-lg p-4 bg-zinc-900/50">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-zinc-100 flex items-center gap-2">
+              <Package2 className="h-4 w-4 text-amber-500" />
+              Dani Mode
+            </h3>
+            <p className="text-xs text-zinc-400 mt-1">
+              Rename "Playlists" to "Crates" throughout the UI
+              (because that's what they are, Dan is right)
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={daniMode}
+              onChange={(e) => setDaniMode(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600" />
+          </label>
         </div>
       </div>
 

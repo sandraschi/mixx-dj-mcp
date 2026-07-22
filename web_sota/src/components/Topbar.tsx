@@ -14,6 +14,7 @@ const routeTitles: Record<string, string> = {
 export default function Topbar() {
   const location = useLocation();
   const backendStatus = useStore((s) => s.backendStatus);
+  const daniMode = useStore((s) => s.daniMode);
   const title = routeTitles[location.pathname] || "Mixx-DJ-MCP";
 
   return (
@@ -37,6 +38,11 @@ export default function Topbar() {
               ? "Offline"
               : "Connecting..."}
         </span>
+        {daniMode && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">
+            Dani Mode
+          </span>
+        )}
       </div>
     </header>
   );
