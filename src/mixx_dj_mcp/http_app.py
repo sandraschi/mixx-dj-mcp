@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastmcp import FastMCP
 
 from .config import MixxConfig
@@ -36,5 +37,9 @@ def create_app(config: MixxConfig) -> FastAPI:
 
 
 def mount_mcp(app: FastAPI, mcp: FastMCP, config: MixxConfig) -> None:
-    mcp_app = mcp.sse_app()
-    app.mount("/mcp", mcp_app)
+    try:
+        mcp_app = mcp.sse_app()
+        app.mount("/mcp", mcp_app)
+    except (AttributeError, TypeError, Exception) as e:
+        import sys
+        print(f"MCP SSE mount skipped: {e}", file=sys.stderr)

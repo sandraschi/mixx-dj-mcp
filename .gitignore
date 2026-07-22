@@ -68,6 +68,11 @@ native/gen/
 node_modules/
 bun.lock
 
+# Build artifacts
+*.tsbuildinfo
+*.d.ts
+vite.config.js
+
 # Runtime
 data/
 *.db

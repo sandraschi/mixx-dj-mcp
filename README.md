@@ -1,36 +1,38 @@
-# Mixx-DJ-MCP - AI-Powered Mixxx DJ Control
+# Mixx-DJ-MCP — AI-Powered Mixxx DJ Control
 
 [![GitHub stars](https://img.shields.io/github/stars/sandraschi/mixx-dj-mcp?style=flat-square)](https://github.com/sandraschi/mixx-dj-mcp)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square)](https://www.python.org/)
 [![FastMCP 3.4+](https://img.shields.io/badge/FastMCP-3.4%2B-purple?style=flat-square)](https://github.com/jlowin/fastmcp)
+[![Mixxx 2.5+](https://img.shields.io/badge/Mixxx-2.5%2B-orange?style=flat-square)](https://mixxx.org/)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
 Control [Mixxx](https://mixxx.org/) open-source DJ software through natural language.
-Search your library, cue tracks, set loops, apply effects, and mix — all from your AI assistant.
+Search your library, cue tracks, set loops, manage effects, and mix — all from your AI assistant.
 
 ```
-User ──→ AI IDE (Claude/Cursor) ──→ mixx-dj-mcp (FastMCP) ──→ OSC Bridge ──→ Mixxx
-                                                                                  │
-                                                                             ┌────┴────┐
-                                                                             │  4 Decks │
-                                                                             │  Mixer   │
-                                                                             │  Effects │
-                                                                             │  Library │
-                                                                             └─────────┘
+User ──→ AI IDE (Claude/Cursor/opencode) ──→ mixx-dj-mcp (FastMCP) ──→ OSC Bridge ──→ Mixxx
+                                                                                           │
+                                                                                     ┌─────┴─────┐
+                                                                                     │  4 Decks   │
+                                                                                     │  Mixer     │
+                                                                                     │  Effects   │
+                                                                                     │  Library   │
+                                                                                     └────────────┘
 ```
 
 ## Features
 
-- **4-Deck Control** — Play, stop, cue, loop, sync, hot cues, scratch, seek, quantize, keylock
-- **Library Search** — Full-text search, crate/playlist browsing, track metadata
-- **Effect Chains** — Enable/disable effects, adjust parameters, quick-effect presets
-- **Mixer** — Crossfader, per-channel EQ (high/mid/low), gain, volume, headphone cue, talkover
-- **Sync & Beatmatch** — Sync to master, tap tempo, nudge
-- **Prefab UI Cards** — Rich in-chat cards for deck status, mixer state, library results
-- **SOTA Webapp** — React/Vite/Bun/Tailwind/Zustand dashboard with live Mixxx status
-- **Tauri NSIS Installer** — Single-file desktop installer with embedded backend
+- **4-Deck Control** — Play/pause, stop, load tracks, cue points, loops, beatloops, sync, rate, scratch, hot cues, quantize, keylock
+- **Library Search** — Full-text search, crate/playlist browsing, track metadata (BPM, key, replay gain), load selected to deck
+- **Effect Chains** — Load/clear chains, enable/disable units, set parameters, quick effects per deck
+- **Mixer** — Crossfader, curve, per-channel gain/EQ/volume/headphone cue/talkover/mic gain
+- **Prefab UI Cards** — Rich in-chat cards for deck, mixer, and library status via `prefab-ui`
+- **SOTA Webapp** — React 19 / Vite 6 / Tailwind 4 / Zustand 5 / Framer Motion / Lucide dashboard
+- **Tauri NSIS Installer** — Single-file desktop installer with embedded Python backend
 - **MCPB Bundle** — Claude Desktop single-click install
+- **FastAPI REST API** — `/api/health`, `/api/deck/status`, `/api/settings`, `/api/v1/diagnostics`
 
 ## Quick Start
 
@@ -38,48 +40,40 @@ User ──→ AI IDE (Claude/Cursor) ──→ mixx-dj-mcp (FastMCP) ──→ 
 # Install dependencies
 uv sync
 
-# Configure Mixxx (one-time)
-# Preferences → MIDI/OSC → Enable OSC → Output port: 11118, Input port: 11119, localhost
-# Restart Mixxx
-
-# Start the server
+# Start the server (stdio mode for Claude Desktop)
 uv run python -m mixx_dj_mcp.server
 
-# Or with HTTP transport
+# Or with HTTP transport (for webapp + multi-client)
 uv run uvicorn mixx_dj_mcp.server:app --port 11116 --reload
 ```
+
+### Mixxx OSC Configuration (one-time)
+
+1. Open Mixxx → **Preferences** → **MIDI/OSC**
+2. **Enable OSC**: check the box
+3. **Output port**: `11118` (Mixxx sends status here)
+4. **Input port**: `11119` (we send commands here)
+5. **Send to**: `127.0.0.1`
+6. Restart Mixxx
+
+> Mixxx must be running with OSC enabled for commands to work. Verify with `curl http://127.0.0.1:11116/api/health`.
 
 ## Requirements
 
 - **Python 3.12+**
-- **Mixxx 2.5+** — with OSC enabled (see [bridge setup](bridge/README.md))
+- **Mixxx 2.5+** — with OSC enabled (see OSC config above)
 - **bun** — for the webapp (`C:\Users\sandr\.bun\bin\bun.exe`)
 
-## Installation
+## Ports
 
-### uv (recommended)
-
-```bash
-uv sync
-cp .env.example .env
-# Edit .env with your Mixxx OSC ports
-```
-
-### Mixxx OSC Configuration
-
-1. Open Mixxx → **Preferences**
-2. Go to **MIDI/OSC** section
-3. **Enable OSC**: check the box
-4. **Output port**: `11118`
-5. **Input port**: `11119`
-6. **Send to**: `127.0.0.1`
-7. Restart Mixxx
-
-See [bridge/README.md](bridge/README.md) for the full OSC address reference.
+| Port | Service |
+|------|---------|
+| 11116 | Backend HTTP (health + REST API) |
+| 11117 | Frontend (Vite dev server) |
+| 11118 | OSC listener (receives Mixxx status feedback) |
+| 11119 | OSC sender (sends commands to Mixxx) |
 
 ## Webapp
-
-The SOTA webapp provides a live dashboard for monitoring and controlling Mixxx.
 
 ```bash
 cd web_sota
@@ -87,57 +81,70 @@ bun install
 bun run dev
 ```
 
-Opens at `http://127.0.0.1:11117`
+Opens at `http://127.0.0.1:11117` — 7 pages: Dashboard, Decks, Library, Effects, Chat, Tools, Settings.
 
 ## Tool Reference
 
 | Tool | Operations | Description |
 |------|-----------|-------------|
-| `mixx_deck` | `play`, `stop`, `cue`, `cue_goto`, `loop`, `loop_roll`, `sync`, `sync_enable`, `hot_cue`, `hot_cue_clear`, `scratch`, `seek`, `quantize`, `keylock`, `load_track`, `eject`, `beatjump`, `beatloop`, `rate`, `rate_reset`, `pregain`, `filter_high`, `filter_mid`, `filter_low` | Full deck control for all 4 decks |
-| `mixx_library` | `search`, `browse_crate`, `browse_playlist`, `track_info`, `list_crates`, `list_playlists`, `search_bpm`, `search_genre`, `search_key` | Library search and navigation |
-| `mixx_effects` | `chain_enable`, `chain_select`, `chain_focus`, `effect_enable`, `effect_param`, `quick_effect`, `clear_chain`, `list_chains` | Effect chain and parameter control |
-| `mixx_mixer` | `crossfader`, `crossfader_curve`, `volume`, `gain`, `balance`, `headphone`, `talkover`, `orientation`, `eq_high`, `eq_mid`, `eq_low`, `eq_reset` | Mixer channel control |
+| `mixx_deck` (17 ops) | `play_pause`, `stop`, `load`, `cue_set`, `cue_play`, `loop_activate`, `loop_beat`, `beatloop`, `rate_set`, `rate_temp`, `sync_enable`, `sync_leader`, `seek`, `scratch`, `hotcue_activate`, `quantize`, `keylock` | Full deck control for all 4 decks |
+| `mixx_library` (8 ops) | `search`, `browse_crate`, `browse_playlist`, `load_selected`, `get_track_info`, `get_bpm`, `get_key`, `get_replay_gain` | Library search and navigation |
+| `mixx_effects` (7 ops) | `list_effects`, `chain_load`, `chain_clear`, `parameter_set`, `meta_set`, `quick_effect_set`, `effect_enable` | Effect chain and parameter control |
+| `mixx_mixer` (8 ops) | `crossfader_set`, `crossfader_curve`, `gain_set`, `eq_set`, `volume_set`, `headphone_cue`, `talkover`, `mic_gain` | Mixer channel control |
+| `show_deck_status_card` | — | Prefab UI card for deck KPIs |
+| `show_mixer_status_card` | — | Prefab UI card for mixer state |
+| `show_library_status_card` | — | Prefab UI card for library status |
+
+### Example calls
+
+```python
+await mixx_deck(deck=1, operation="play_pause")
+await mixx_deck(deck=2, operation="load", track_path="C:/Music/track.mp3")
+await mixx_deck(deck=1, operation="sync_enable", enable=True)
+await mixx_deck(deck=1, operation="rate_set", value=0.05)
+await mixx_library(operation="search", query="tech house")
+await mixx_library(operation="load_selected", deck=3)
+await mixx_mixer(channel=1, operation="crossfader_set", value=0.0)
+await mixx_mixer(deck=1, operation="eq_set", eq_band="low", value=0.5)
+await mixx_effects(rack=1, unit=1, operation="chain_load", effect="Flanger")
+await mixx_effects(rack=1, unit=1, operation="effect_enable", enable=True)
+```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   AI Assistant                       │
-│  (Claude Desktop / Cursor / opencode)                │
-└──────────────┬──────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                     AI Assistant                          │
+│     (Claude Desktop / Cursor / opencode)                  │
+└──────────────┬───────────────────────────────────────────┘
                │ MCP stdio/HTTP
-┌──────────────▼──────────────────────────────────────┐
-│              mixx-dj-mcp (FastMCP 3.4+)              │
-│                                                      │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
-│  │   Deck   │  │ Library  │  │ Effects  │           │
-│  │  Control │  │  Search  │  │   Chain  │           │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘           │
-│       │              │              │                  │
-│  ┌────▼──────────────▼──────────────▼─────┐           │
-│  │           OSC Bridge (python-osc)       │           │
-│  └────────────────────┬───────────────────┘           │
-└───────────────────────┼───────────────────────────────┘
-                        │ OSC UDP (port 11118/11119)
-┌───────────────────────▼───────────────────────────────┐
-│                    Mixxx 2.5+                          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │
-│  │  Deck 1  │ │  Deck 2  │ │  Deck 3  │ │  Deck 4  │ │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ │
-│  ┌──────────────────────────────────────────────────┐ │
-│  │                   Mixer + Effects                 │ │
-│  └──────────────────────────────────────────────────┘ │
-│  ┌──────────────────────────────────────────────────┐ │
-│  │                   Library                         │ │
-│  └──────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────┘
+┌──────────────▼───────────────────────────────────────────┐
+│               mixx-dj-mcp (FastMCP 3.4+)                  │
+│                                                           │
+│  ┌─────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │  Deck   │  │ Library  │  │ Effects  │  │  Mixer   │  │
+│  │ Control │  │  Search  │  │   Chain  │  │          │  │
+│  └────┬────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  │
+│       │             │             │              │        │
+│  ┌────▼─────────────▼─────────────▼──────────────▼─────┐  │
+│  │            OSC Bridge (python-osc UDP)               │  │
+│  └─────────────────────┬───────────────────────────────┘  │
+└────────────────────────┼──────────────────────────────────┘
+                         │ OSC (11118/11119)
+┌────────────────────────▼──────────────────────────────────┐
+│                      Mixxx 2.5+                           │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐        │
+│  │  Deck 1 │ │  Deck 2 │ │  Deck 3 │ │  Deck 4 │        │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘        │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │              Mixer + Effects + Library               │ │
+│  └─────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────┘
 ```
 
-The OSC bridge uses the [python-osc](https://pypi.org/project/python-osc/) library to send and receive OSC messages to Mixxx. Each tool maps to one or more OSC `/controller` addresses as documented in [bridge/README.md](bridge/README.md).
+The OSC bridge uses [python-osc](https://pypi.org/project/python-osc/) to send commands to Mixxx on port 11119 and receive status feedback on port 11118. Each tool maps to Mixxx Control Object (CO) addresses as documented in `src/mixx_dj_mcp/bridge/protocol.py`.
 
 ## Tauri Native Installer
-
-A standalone NSIS installer bundles the React webapp and Python backend into a single `.exe`.
 
 ```bash
 just build-native
@@ -153,8 +160,6 @@ just build-native && just cua-nsis-test
 
 ## MCPB Bundle
 
-For Claude Desktop single-click install:
-
 ```bash
 mcpb pack . dist/mixx-dj-mcp.mcpb
 ```
@@ -165,8 +170,8 @@ mcpb pack . dist/mixx-dj-mcp.mcpb
 
 ```bash
 just lint        # ruff check + format
-just test        # pytest
-just serve       # start dev server
+just test        # pytest (41 tests)
+just serve       # uvicorn dev server on :11116
 just build-native  # Tauri NSIS build
 just cua-nsis-test # CUA smoke test
 just e2e         # Playwright E2E
@@ -176,19 +181,28 @@ just e2e         # Playwright E2E
 
 ```bash
 uv run pytest tests/ -q
-uv run pytest tests/ --cov=mixx_dj_mcp
+uv run pytest tests/ -v --tb=short
 ```
 
 ### Linting
 
 ```bash
 uv run ruff check src/
-uv run ruff format src/
+uv run ruff format src/ --check
 ```
 
-## data-testid Notes (CUA Testing)
+### REST API
 
-The webapp dashboard uses `data-testid` attributes for CUA/Playwright targeting:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Server health + Mixxx connection status |
+| `/api/deck/status` | GET | Live deck states (play, BPM, volume, etc.) |
+| `/api/settings` | GET | Current OSC/host configuration |
+| `/api/v1/diagnostics` | GET | Full diagnostics (tool count, OSC, system) |
+| `/docs` | GET | Swagger UI |
+| `/redoc` | GET | ReDoc |
+
+## data-testid Notes (CUA Testing)
 
 | Attribute | Element |
 |-----------|---------|
@@ -197,9 +211,9 @@ The webapp dashboard uses `data-testid` attributes for CUA/Playwright targeting:
 | `kpi-decks` | Active decks count |
 | `kpi-mixx-status` | Mixxx connection status |
 | `backend-dot` | Backend connection indicator |
-| `chat-page` | Chat page container |
-| `chat-input` | Chat input field |
+| `deck-status-card` | Deck status Prefab card |
+| `mixer-status-card` | Mixer status Prefab card |
 
 ## License
 
-[MIT](LICENSE) - Sandra Schipal
+[MIT](LICENSE) — Sandra Schipal

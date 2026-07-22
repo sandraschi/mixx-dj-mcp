@@ -8,9 +8,7 @@ from ..bridge.osc_bridge import get_bridge
 console = Console(file=__import__("sys").stderr)
 
 
-def register_mixer_tools(mcp: FastMCP):
-    @mcp.tool()
-    async def mixx_mixer(
+async def mixx_mixer(
         operation: Literal[
             "crossfader_set", "crossfader_curve", "gain_set",
             "eq_set", "volume_set", "headphone_cue",
@@ -108,3 +106,7 @@ def register_mixer_tools(mcp: FastMCP):
         except Exception as e:
             console.print(f"[red]Error in mixx_mixer: {e}[/red]")
             return {"success": False, "message": str(e), "data": {}}
+
+
+def register_mixer_tools(mcp: FastMCP):
+    mcp.tool()(mixx_mixer)

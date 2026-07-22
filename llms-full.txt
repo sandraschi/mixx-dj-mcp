@@ -2,11 +2,34 @@
 
 ## What Is Mixx-DJ-MCP?
 
-Mixx-DJ-MCP is a FastMCP 3.4+ server that bridges LLM agents (Claude Desktop, Cursor, opencode) to Mixxx — the leading open-source DJ software. It exposes Mixxx's built-in OSC protocol as structured MCP tools, enabling natural-language DJ control.
+Mixx-DJ-MCP is a FastMCP 3.4+ server that bridges LLM agents (Claude Desktop, Cursor, opencode) to [Mixxx](https://mixxx.org/) — the leading open-source DJ software. It communicates with Mixxx via OSC (Open Sound Control) using the [python-osc](https://pypi.org/project/python-osc/) library, translating natural-language requests into Mixxx Control Object (CO) commands.
 
-The server uses the **industrial portmanteau pattern**: related operations are grouped into a single tool with an `operation` enum discriminator. This keeps the tool surface clean while providing full control over Mixxx's deck, library, effects, and mixer subsystems.
+The server uses the **industrial portmanteau pattern**: related operations are grouped into a single tool with an `operation` enum discriminator. Four portmanteau tools cover deck control, library, effects, and mixer, plus three Prefab UI cards for in-chat visualization.
 
-## Architecture Overview
+**Version**: 0.1.0 — initial release. Tested against Mixxx 2.5.6.
+
+## Quick Start
+
+```bash
+uv sync
+
+# stdio mode (Claude Desktop)
+uv run python -m mixx_dj_mcp.server
+
+# HTTP mode (webapp + multi-client)
+uv run uvicorn mixx_dj_mcp.server:app --port 11116 --reload
+
+# Verify
+curl http://127.0.0.1:11116/api/health
+```
+
+### Mixxx OSC Config (one-time)
+
+1. Preferences → MIDI/OSC → Enable OSC
+2. Output port: `11118`, Input port: `11119`, Send to: `127.0.0.1`
+3. Restart Mixxx
+
+## Architecture
 
 ```
 Agent (Claude/Cursor/opencode)
@@ -14,17 +37,17 @@ Agent (Claude/Cursor/opencode)
     ▼
 mixx-dj-mcp (FastMCP 3.4+)
     │
-    ├── mixx_deck(deck, operation, ...)       # Transport, cue, loop, sync, hot cues
-    ├── mixx_library(operation, ...)           # Search, browse, track info
-    ├── mixx_effects(chain, operation, ...)    # Chain management, effect params
-    └── mixx_mixer(channel, operation, ...)    # Crossfader, EQ, volume, gain
-    │
-    ▼ OSC UDP (python-osc)
-Mixxx (ports 11118/11119)
-    ├── Deck 1-4 (play, stop, cue, loop, sync, hot cues, scratch, ...)
-    ├── Mixer (crossfader, EQ, gain, volume, headphone)
-    ├── Effects (chain, unit, parameter)
-    └── Library (search, crate, playlist, track metadata)
+    ├── mixx_deck(deck, operation, ...)          # 17 ops
+    ├── mixx_library(operation, ...)             # 8 ops
+    ├── mixx_effects(rack, unit, operation, ...) # 7 ops
+    └── mixx_mixer(deck, operation, ...)         # 8 ops
+    │   (plus 3 Prefab card tools)
+    ▼ OSC UDP (port 11119 → Mixxx, 11118 ← Mixxx)
+Mixxx 2.5+
+    ├── Deck 1-4 (play, stop, cue, loop, sync, hot cues, scratch, rate, EQ, ...)
+    ├── Mixer (crossfader, volume, gain, headphone, talkover, mic)
+    ├── Effects (rack/unit chain, parameters, meta)
+    └── Library (search, crate, playlist, load to deck)
 ```
 
 ## Tool Reference
@@ -37,41 +60,30 @@ Full deck control for decks 1-4.
 
 | Operation | Params | Description |
 |-----------|--------|-------------|
-| `play` | `deck` | Start playback |
+| `play_pause` | `deck` | Toggle play/pause |
 | `stop` | `deck` | Stop playback |
-| `cue` | `deck` | Set/manage cue point |
-| `cue_goto` | `deck` | Jump to cue point |
-| `loop` | `deck`, `size` | Enable loop at specified beat size |
-| `loop_roll` | `deck`, `size` | Roll loop (returns to position after release) |
-| `sync` | `deck` | Sync to master deck |
-| `sync_enable` | `deck`, `enabled` | Toggle sync lock |
-| `hot_cue` | `deck`, `cue_num` | Activate/set hot cue (1-4) |
-| `hot_cue_clear` | `deck`, `cue_num` | Clear hot cue |
-| `scratch` | `deck`, `position` | Scratch to position (-1.0 to 1.0) |
-| `seek` | `deck`, `position` | Seek to track position (0.0 to 1.0) |
-| `quantize` | `deck`, `enabled` | Toggle beat quantization |
-| `keylock` | `deck`, `enabled` | Toggle keylock (preserve pitch) |
-| `load_track` | `deck`, `track_location` | Load track from library |
-| `eject` | `deck` | Eject (unload) track |
-| `beatjump` | `deck`, `beats` | Jump forward/backward by beats (negative = back) |
-| `beatloop` | `deck`, `beats` | Set beat loop of specified length |
-| `rate` | `deck`, `rate` | Set playback speed rate |
-| `rate_reset` | `deck` | Reset rate to 0% |
-| `pregain` | `deck`, `gain` | Set pregain in dB |
-| `filter_high` | `deck`, `value` | Set high shelf filter (0.0 to 1.0) |
-| `filter_mid` | `deck`, `value` | Set mid peak filter (0.0 to 1.0) |
-| `filter_low` | `deck`, `value` | Set low shelf filter (0.0 to 1.0) |
+| `load` | `deck`, `track_path` | Load track from file path |
+| `cue_set` | `deck` | Set cue point at current position |
+| `cue_play` | `deck` | Play from cue point |
+| `loop_activate` | `deck`, `enable` | Toggle loop on/off |
+| `loop_beat` | `deck`, `beats` | Set beat loop (1-64) |
+| `beatloop` | `deck`, `beats` | Same as loop_beat |
+| `rate_set` | `deck`, `value` | Set playback rate (-1.0 to 1.0) |
+| `rate_temp` | `deck`, `value` | Temporary pitch bend (seconds) |
+| `sync_enable` | `deck`, `enable` | Toggle sync lock |
+| `sync_leader` | `deck`, `enable` | Set as sync leader |
+| `seek` | `deck`, `value` | Seek to position in seconds |
+| `scratch` | `deck`, `enable` | Enable/disable scratch mode |
+| `hotcue_activate` | `deck`, `hotcue` | Activate hotcue (1-8) |
+| `quantize` | `deck`, `enable` | Toggle beat quantization |
+| `keylock` | `deck`, `enable` | Toggle keylock |
 
 **Return format:**
 ```json
 {
   "success": true,
-  "message": "Started playback on Deck 1",
-  "data": {
-    "deck": 1,
-    "operation": "play",
-    "state": "playing"
-  }
+  "message": "Deck 1: play/pause toggled",
+  "data": {"deck": 1}
 }
 ```
 
@@ -83,28 +95,21 @@ Library search and navigation.
 
 | Operation | Params | Description |
 |-----------|--------|-------------|
-| `search` | `query`, `limit` | Full-text search across library |
-| `browse_crate` | `crate_name`, `limit` | List tracks in a crate |
-| `browse_playlist` | `playlist_name`, `limit` | List tracks in a playlist |
-| `track_info` | `track_location` | Get detailed track metadata |
-| `list_crates` | — | List all crates |
-| `list_playlists` | — | List all playlists |
-| `search_bpm` | `min_bpm`, `max_bpm`, `limit` | Filter by BPM range |
-| `search_genre` | `genre`, `limit` | Filter by genre |
-| `search_key` | `key`, `limit` | Filter by musical key |
+| `search` | `query` | Full-text search in library |
+| `browse_crate` | `crate` | Browse tracks in a crate |
+| `browse_playlist` | `playlist` | Browse tracks in a playlist |
+| `load_selected` | `deck` | Load highlighted track to deck |
+| `get_track_info` | `deck` | Get metadata for current track |
+| `get_bpm` | `deck` | Get BPM of current track |
+| `get_key` | `deck` | Get musical key of current track |
+| `get_replay_gain` | `deck` | Get replay gain values |
 
 **Return format:**
 ```json
 {
   "success": true,
-  "message": "Found 12 tracks matching 'tech house'",
-  "data": {
-    "query": "tech house",
-    "count": 12,
-    "results": [
-      {"title": "...", "artist": "...", "bpm": 128, "key": "7A", "location": "...", "duration": 360}
-    ]
-  }
+  "message": "Searching library for: tech house",
+  "data": {"query": "tech house"}
 }
 ```
 
@@ -116,14 +121,13 @@ Effect chain management and parameter control.
 
 | Operation | Params | Description |
 |-----------|--------|-------------|
-| `chain_enable` | `chain`, `enabled` | Enable/disable effect chain |
-| `chain_select` | `chain`, `unit_type` | Select effect unit type for chain |
-| `chain_focus` | `chain` | Focus on this chain |
-| `effect_enable` | `chain`, `effect`, `enabled` | Enable/disable individual effect |
-| `effect_param` | `chain`, `effect`, `param`, `value` | Set effect parameter (0.0 to 1.0) |
-| `quick_effect` | `chain`, `effect` | Quick-activate effect with defaults |
-| `clear_chain` | `chain` | Clear all effects from chain |
-| `list_chains` | — | List available effect chains and their status |
+| `list_effects` | `rack`, `unit` | List available effects |
+| `chain_load` | `rack`, `unit`, `effect` | Load effect chain by name |
+| `chain_clear` | `rack`, `unit` | Clear all effects from chain |
+| `parameter_set` | `rack`, `unit`, `parameter`, `value` | Set effect parameter (0.0-1.0) |
+| `meta_set` | `rack`, `unit`, `value` | Set meta/param knob (0.0-1.0) |
+| `quick_effect_set` | `deck`, `effect` | Set quick effect on deck |
+| `effect_enable` | `rack`, `unit`, `enable` | Enable/disable effect unit |
 
 ### mixx_mixer
 
@@ -133,93 +137,121 @@ Mixer channel control.
 
 | Operation | Params | Description |
 |-----------|--------|-------------|
-| `crossfader` | `position` | Set crossfader position (-1.0 to 1.0) |
-| `crossfader_curve` | `curve` | Set crossfader curve (0.0 to 1.0) |
-| `volume` | `channel`, `volume` | Set channel volume (0.0 to 1.0) |
-| `gain` | `channel`, `gain` | Set channel gain in dB |
-| `balance` | `channel`, `balance` | Set channel balance (-1.0 to 1.0) |
-| `headphone` | `channel`, `enabled` | Toggle headphone cue |
-| `talkover` | `channel`, `enabled` | Toggle talkover (mic) |
-| `orientation` | `channel`, `orientation` | Set channel orientation (left/center/right) |
-| `eq_high` | `channel`, `value` | Set high EQ band (0.0 to 1.0) |
-| `eq_mid` | `channel`, `value` | Set mid EQ band (0.0 to 1.0) |
-| `eq_low` | `channel`, `value` | Set low EQ band (0.0 to 1.0) |
-| `eq_reset` | `channel` | Reset all EQ bands to neutral |
+| `crossfader_set` | `value` | Set crossfader (-1.0 to 1.0) |
+| `crossfader_curve` | `value` | Set crossfader curve (0.0-1.0) |
+| `gain_set` | `deck`, `value` | Set deck pregain (0.0-5.0) |
+| `eq_set` | `deck`, `eq_band`, `value` | Set EQ band (high/mid/low, 0.0-1.0) |
+| `volume_set` | `deck`, `value` | Set channel volume (0.0-1.0) |
+| `headphone_cue` | `deck`, `enable` | Toggle headphone cue (PFL) |
+| `talkover` | `enable` | Toggle microphone talkover |
+| `mic_gain` | `value` | Set microphone gain (0.0-1.0) |
+
+### Prefab UI Cards
+
+| Tool | Description |
+|------|-------------|
+| `show_deck_status_card(deck)` | Rich card with play state, BPM, key, gain, volume, sync, loop |
+| `show_mixer_status_card()` | Rich card with crossfader position and per-deck levels |
+| `show_library_status_card()` | Rich card showing OSC connection and port info |
 
 ## Mixxx OSC Address Reference
 
-Mixxx exposes OSC endpoints under `/controller` namespace. Key address patterns:
+### Deck Transport (`/deck/[1-4]/...`)
 
-### Deck Control (`/deck/[1-4]/...`)
+| Address | Value | Description |
+|---------|-------|-------------|
+| `/deck/[N]/play` | 1.0 | Toggle play/pause |
+| `/deck/[N]/stop` | 1.0 | Stop playback |
+| `/deck/[N]/LoadTrack` | string | Load track by path |
+| `/deck/[N]/cue_set` | 1.0 | Set cue point |
+| `/deck/[N]/cue_play` | 1.0 | Play from cue |
+| `/deck/[N]/seek` | float | Seek to seconds |
+| `/deck/[N]/rate` | -1.0 to 1.0 | Set playback rate |
+| `/deck/[N]/rate_temp` | float | Temporary pitch bend (seconds) |
+| `/deck/[N]/sync_enabled` | 1.0/0.0 | Toggle sync lock |
+| `/deck/[N]/sync_leader` | 1.0/0.0 | Set as sync leader |
+| `/deck/[N]/loop_enabled` | 1.0/0.0 | Toggle loop |
+| `/deck/[N]/beatloop_[1,2,4,8,16,32,64]` | 1.0 | Activate beat loop |
+| `/deck/[N]/hotcue_[1-8]_activated` | 1.0 | Activate hotcue |
+| `/deck/[N]/quantize` | 1.0/0.0 | Toggle quantize |
+| `/deck/[N]/keylock` | 1.0/0.0 | Toggle keylock |
+| `/deck/[N]/scratch` | 1.0/0.0 | Toggle scratch mode |
 
-| Address | Type | Values | Description |
-|---------|------|--------|-------------|
-| `/deck/[1-4]/play` | bool | 0/1 | Play/pause |
-| `/deck/[1-4]/play_indicator` | float | 0/1 | Play state indicator |
-| `/deck/[1-4]/cue_default` | bool | 0/1 | Set/jump to cue |
-| `/deck/[1-4]/cue_goto` | bool | 0/1 | Jump to cue |
-| `/deck/[1-4]/cue_set` | bool | 0/1 | Set cue point |
-| `/deck/[1-4]/loop_enabled` | bool | 0/1 | Loop on/off |
-| `/deck/[1-4]/beatloop_[4,8,16,32]` | bool | 0/1 | Beat loop toggle |
-| `/deck/[1-4]/beatjump_[1,2,4,8,16]_forward` | bool | 0/1 | Beat jump forward |
-| `/deck/[1-4]/beatjump_[1,2,4,8,16]_backward` | bool | 0/1 | Beat jump backward |
-| `/deck/[1-4]/sync_enabled` | bool | 0/1 | Sync lock toggle |
-| `/deck/[1-4]/sync_mode` | float | 0-4 | Sync mode |
-| `/deck/[1-4]/hotcue_[1-4]_activated` | bool | 0/1 | Hot cue activate |
-| `/deck/[1-4]/hotcue_[1-4]_set` | bool | 0/1 | Hot cue set |
-| `/deck/[1-4]/hotcue_[1-4]_clear` | bool | 0/1 | Hot cue clear |
-| `/deck/[1-4]/rate` | float | -1.0 to 1.0 | Playback rate |
-| `/deck/[1-4]/rate_perm_up` | bool | 0/1 | Rate increase |
-| `/deck/[1-4]/rate_perm_down` | bool | 0/1 | Rate decrease |
-| `/deck/[1-4]/pregain` | float | 0.0 to 4.0 | Pregain (linear) |
-| `/deck/[1-4]/filterHigh` | float | 0.0 to 1.0 | High shelf filter |
-| `/deck/[1-4]/filterMid` | float | 0.0 to 1.0 | Mid peak filter |
-| `/deck/[1-4]/filterLow` | float | 0.0 to 1.0 | Low shelf filter |
-| `/deck/[1-4]/quantize` | bool | 0/1 | Quantize on/off |
-| `/deck/[1-4]/keylock` | bool | 0/1 | Keylock on/off |
-| `/deck/[1-4]/LoadTrack` | string | path | Load track from path |
-| `/deck/[1-4]/eject` | bool | 0/1 | Eject track |
-| `/deck/[1-4]/scratch` | float | -1.0 to 1.0 | Scratch position |
+### Deck EQ/Filter (`/deck/[1-4]/...`)
 
-### Mixer (`/mixer/...`)
+| Address | Value | Description |
+|---------|-------|-------------|
+| `/deck/[N]/pregain` | 0.0-5.0 | Pregain/trim |
+| `/deck/[N]/volume` | 0.0-1.0 | Channel volume |
+| `/deck/[N]/pfl` | 1.0/0.0 | Headphone cue (pre-fader listen) |
+| `/deck/[N]/filterHigh` | 0.0-1.0 | High EQ |
+| `/deck/[N]/filterMid` | 0.0-1.0 | Mid EQ |
+| `/deck/[N]/filterLow` | 0.0-1.0 | Low EQ |
 
-| Address | Type | Values | Description |
-|---------|------|--------|-------------|
-| `/mixer/crossfader` | float | -1.0 to 1.0 | Crossfader position |
-| `/mixer/crossfader_curve` | float | 0.0 to 1.0 | Crossfader curve |
-| `/mixer/volume/[1-4]` | float | 0.0 to 1.0 | Channel volume |
-| `/mixer/pregain/[1-4]` | float | 0.0 to 4.0 | Channel pregain |
-| `/mixer/balance/[1-4]` | float | -1.0 to 1.0 | Channel balance |
-| `/mixer/headVolume/[1-4]` | float | 0.0 to 1.0 | Headphone volume |
-| `/mixer/pfl/[1-4]` | bool | 0/1 | Headphone cue (PFL) |
-| `/mixer/talkover/[1-4]` | bool | 0/1 | Talkover enable |
-| `/mixer/orientation/[1-4]` | int | 0/1/2 | Orientation (L/C/R) |
-| `/mixer/equalizer/[1-4]/[0-2]` | float | 0.0 to 1.0 | EQ band (0=low, 1=mid, 2=high) |
+### Mixer
 
-### Effects (`/effects/...`)
+| Address | Value | Description |
+|---------|-------|-------------|
+| `/crossfader` | -1.0 to 1.0 | Crossfader position |
+| `/crossfader/curve` | 0.0-1.0 | Crossfader curve |
+| `/talkover` | 1.0/0.0 | Microphone talkover |
+| `/microphone/gain` | 0.0-1.0 | Mic gain |
 
-| Address | Type | Values | Description |
-|---------|------|--------|-------------|
-| `/effects/chain/[1-4]/enabled` | bool | 0/1 | Chain enable |
-| `/effects/chain/[1-4]/mix` | float | 0.0 to 1.0 | Chain wet/dry mix |
-| `/effects/chain/[1-4]/super` | float | 0.0 to 1.0 | Super knob |
-| `/effects/chain/[1-4]/effect/[1-4]/enabled` | bool | 0/1 | Effect enable |
-| `/effects/chain/[1-4]/effect/[1-4]/param/[1-4]` | float | 0.0 to 1.0 | Effect parameter |
+### Effects (`/EffectRack[N]_EffectUnit[N]/...`)
+
+| Address | Value | Description |
+|---------|-------|-------------|
+| `/EffectRack[N]_EffectUnit[N]/enabled` | 1.0/0.0 | Enable/disable unit |
+| `/EffectRack[N]_EffectUnit[N]/chain_load` | string | Load chain by name |
+| `/EffectRack[N]_EffectUnit[N]/chain_clear` | 1.0 | Clear chain |
+| `/EffectRack[N]_EffectUnit[N]/meta` | 0.0-1.0 | Meta knob |
+| `/EffectRack[N]_EffectUnit[N]/parameter[N]` | 0.0-1.0 | Effect parameter |
 
 ### Library
 
-| Address | Type | Values | Description |
-|---------|------|--------|-------------|
-| `/Library/LoadTrackIntoDeck/[1-4]` | string | path | Load track into deck |
+| Address | Value | Description |
+|---------|-------|-------------|
+| `/library/search` | string | Search library |
+| `/library/load_selected` | float | Load selected to deck |
+| `/library/crate/[name]/select` | 1.0 | Browse crate |
+| `/library/playlist/[name]/select` | 1.0 | Browse playlist |
+
+### OSC Feedback (Mixxx → us, port 11118)
+
+| Address | Description |
+|---------|-------------|
+| `/deck/[N]/play` | Play state (1.0/0.0) |
+| `/deck/[N]/bpm` | Current BPM |
+| `/deck/[N]/rate` | Current rate adjustment |
+| `/deck/[N]/volume` | Channel volume |
+| `/deck/[N]/pregain` | Channel pregain |
+| `/deck/[N]/sync_enabled` | Sync lock state |
+| `/deck/[N]/loop_enabled` | Loop state |
+| `/deck/[N]/keylock` | Keylock state |
+| `/deck/[N]/pfl` | Headphone cue state |
+| `/deck/[N]/track_samples` | Track position in samples |
+| `/deck/[N]/track_samplerate` | Track sample rate |
+| `/crossfader` | Crossfader position |
 
 ## REST API
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/health` | GET | Server health + Mixxx status |
-| `/api/v1/diagnostics` | GET | Full diagnostics (tools, OSC, system) |
+| `/api/health` | GET | Server health + Mixxx connection status |
+| `/api/deck/status` | GET | Live deck states (play, BPM, volume, etc.) |
+| `/api/settings` | GET | Current OSC/host configuration |
+| `/api/v1/diagnostics` | GET | Full diagnostics (tool count, OSC status, system) |
 | `/api/skills` | GET | List available skills |
 | `/api/skills/{name}` | GET | Get skill content |
+| `/docs` | GET | Swagger UI |
+| `/redoc` | GET | ReDoc |
+| `/openapi.json` | GET | OpenAPI schema |
+| `/mcp` | POST | MCP streamable HTTP transport |
+
+Health response:
+```json
+{"status": "ok", "server": "mixx-dj-mcp", "version": "0.1.0", "uptime_seconds": 42, "tool_count": 7, "providers": {"mixxx": true}}
+```
 
 ## Configuration
 
@@ -228,112 +260,88 @@ Mixxx exposes OSC endpoints under `/controller` namespace. Key address patterns:
 | `MIXX_MCP_HOST` | 127.0.0.1 | Server bind address |
 | `MIXX_MCP_PORT` | 11116 | Server HTTP port |
 | `MIXX_OSC_OUT_PORT` | 11118 | OSC output (Mixxx feedback) |
-| `MIXX_OSC_IN_PORT` | 11119 | OSC input (Mixxx commands) |
+| `MIXX_OSC_IN_PORT` | 11119 | OSC input (send to Mixxx) |
 | `MIXX_HOST` | 127.0.0.1 | Mixxx host address |
 | `LOG_LEVEL` | info | Logging level |
 | `MIXX_TAURI` | 0 | Set to 1 when launched from Tauri wrapper |
 
-## Setup Guide
-
-### 1. Mixxx OSC Configuration
-
-1. Open Mixxx → Preferences
-2. Navigate to MIDI/OSC section
-3. Check **Enable OSC**
-4. Set **Output port**: `11118`
-5. Set **Input port**: `11119`
-6. Set **Send to**: `127.0.0.1`
-7. Click Apply and restart Mixxx
-
-### 2. Start the MCP Server
-
-```bash
-# stdio (for Claude Desktop)
-uv run python -m mixx_dj_mcp.server
-
-# HTTP (for webapp + multi-client)
-uv run uvicorn mixx_dj_mcp.server:app --port 11116 --reload
-```
-
-### 3. Verify
-
-```bash
-curl http://127.0.0.1:11116/api/health
-```
-
-Returns:
-```json
-{"status": "ok", "server": "mixx-dj-mcp", "version": "0.1.0", "mixx_connected": true}
-```
-
-## Development Guide
-
-### Project Structure
+## Project Structure
 
 ```
 mixx-dj-mcp/
 ├── src/
 │   └── mixx_dj_mcp/
 │       ├── __init__.py
-│       ├── server.py          # FastMCP app + tool registration
-│       ├── config.py          # Configuration management
-│       ├── transport.py       # Dual transport (stdio/HTTP)
-│       ├── osc/
+│       ├── __main__.py           # Entry point: python -m mixx_dj_mcp
+│       ├── server.py             # FastMCP app, FastAPI app, lifespan, health endpoints
+│       ├── http_app.py           # FastAPI factory + CORS + MCP mount
+│       ├── config.py             # MixxConfig from env
+│       ├── transport.py          # Transport type enum
+│       ├── bridge/
 │       │   ├── __init__.py
-│       │   ├── bridge.py      # OSC UDP client
-│       │   └── addresses.py   # OSC address constants
-│       ├── tools/
-│       │   ├── __init__.py    # Portmanteau imports
-│       │   ├── deck.py
-│       │   ├── library.py
-│       │   ├── effects.py
-│       │   └── mixer.py
-│       ├── models/
-│       │   ├── __init__.py
-│       │   └── schemas.py
-│       └── skills/
-│           └── mixx-dj/
-│               └── SKILL.md
+│       │   ├── osc_bridge.py     # OSC UDP client (send + receive + state tracking)
+│       │   └── protocol.py       # OSC address constants and CO mappings
+│       └── tools/
+│           ├── __init__.py       # register_all_tools()
+│           ├── deck_control.py   # mixx_deck portmanteau
+│           ├── library.py        # mixx_library portmanteau
+│           ├── effects.py        # mixx_effects portmanteau
+│           ├── mixer.py          # mixx_mixer portmanteau
+│           └── prefab_cards.py   # show_*_status_card Prefab tools
 ├── tests/
-│   ├── test_deck.py
-│   ├── test_library.py
-│   ├── test_effects.py
-│   └── test_mixer.py
-├── web_sota/                  # React webapp
-├── native/                    # Tauri NSIS build
-├── bridge/
-│   └── README.md              # OSC setup guide
+│   ├── test_bridge.py            # 9 tests (OSC addresses, bridge mock)
+│   ├── test_deck_control.py      # 11 tests (play, stop, sync, rate, load, ...)
+│   ├── test_effects.py           # 9 tests (chain load/clear, params, enable)
+│   └── test_mixer.py             # 12 tests (crossfader, EQ, volume, headphone, ...)
+├── web_sota/                     # React 19 / Vite 6 / Tailwind 4 webapp
+├── native/                       # Tauri 2.0 NSIS build
+├── mcpb/                         # MCPB bundle assets
 ├── scripts/
-│   └── cua-smoke.py           # CUA-NSIS smoke test
+│   ├── cua-smoke.py              # CUA-NSIS smoke test
+│   └── install-mcp-clients.ps1   # MCP client registration
 ├── .env.example
-├── start.ps1
-├── start.bat
+├── start.ps1 / start.bat
 ├── pyproject.toml
 ├── justfile
-├── llms.txt
-├── llms-full.txt
+├── llms.txt / llms-full.txt
 └── glama.json
 ```
+
+## Development
 
 ### just recipes
 
 ```bash
 just lint        # ruff check + format
-just test        # pytest
-just serve       # uvicorn dev server
+just test        # pytest (41 tests)
+just serve       # uv run uvicorn ... --port 11116
 just build-native  # Tauri NSIS build
 just cua-nsis-test # CUA smoke test
 just e2e         # Playwright E2E
+```
+
+### Testing
+
+```bash
+uv run pytest tests/ -q
+uv run pytest tests/ -v --tb=short
+```
+
+### Linting
+
+```bash
+uv run ruff check src/
+uv run ruff format src/ --check
 ```
 
 ## Troubleshooting
 
 | Problem | Likely Cause | Solution |
 |---------|-------------|----------|
-| `OSCError: [Errno 10061]` | Mixxx not running or OSC not enabled | Start Mixxx, verify OSC preferences |
-| Commands work then stop | Mixxx OSC port changed | Restart Mixxx, verify ports match .env |
+| `OSCError: [Errno 10061]` | Mixxx not running or OSC not enabled | Start Mixxx, verify Preferences → MIDI/OSC |
+| Commands sent but no effect | Mixxx OSC port mismatch | Verify ports in .env match Mixxx preferences |
 | `Connection refused` on 11118/11119 | Port conflict | Check `netstat -ano` for other apps on these ports |
-| Library search returns empty | Mixxx library not indexed | Open Mixxx, ensure tracks are in library |
-| Slow response | UDP packet loss | Enable OSC feedback polling for confirmation |
-| Tools not showing in client | FastMCP import issue | Verify `__init__.py` imports all tool modules |
-| Webapp shows "Backend offline" | Backend not running or wrong port | Run `uv run uvicorn ... --port 11116`, check health endpoint |
+| Library operations return no data | Mixxx library not loaded | Ensure tracks are in Mixxx library |
+| Tools not showing in client | FastMCP import issue | Verify `tools/__init__.py` has all imports |
+| Webapp shows "Backend offline" | Backend not running or port mismatch | Run `uv run uvicorn ... --port 11116`, check health |
+| Mixxx 2.5.6 at C:\Program Files\Mixxx\ | Standard install path | Verify with `where mixxx` |

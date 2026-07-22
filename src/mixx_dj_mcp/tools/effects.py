@@ -8,9 +8,7 @@ from ..bridge.osc_bridge import get_bridge
 console = Console(file=__import__("sys").stderr)
 
 
-def register_effects_tools(mcp: FastMCP):
-    @mcp.tool()
-    async def mixx_effects(
+async def mixx_effects(
         operation: Literal[
             "list_effects", "chain_load", "chain_clear",
             "parameter_set", "meta_set", "quick_effect_set",
@@ -104,3 +102,7 @@ def register_effects_tools(mcp: FastMCP):
         except Exception as e:
             console.print(f"[red]Error in mixx_effects: {e}[/red]")
             return {"success": False, "message": str(e), "data": {}}
+
+
+def register_effects_tools(mcp: FastMCP):
+    mcp.tool()(mixx_effects)

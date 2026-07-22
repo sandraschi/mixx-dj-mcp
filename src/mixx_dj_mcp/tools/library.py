@@ -8,9 +8,7 @@ from ..bridge.osc_bridge import get_bridge
 console = Console(file=__import__("sys").stderr)
 
 
-def register_library_tools(mcp: FastMCP):
-    @mcp.tool()
-    async def mixx_library(
+async def mixx_library(
         operation: Literal[
             "search", "browse_crate", "browse_playlist",
             "load_selected", "get_track_info", "get_bpm",
@@ -92,3 +90,7 @@ def register_library_tools(mcp: FastMCP):
         except Exception as e:
             console.print(f"[red]Error in mixx_library: {e}[/red]")
             return {"success": False, "message": str(e), "data": {}}
+
+
+def register_library_tools(mcp: FastMCP):
+    mcp.tool()(mixx_library)

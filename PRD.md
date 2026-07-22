@@ -1,6 +1,6 @@
-# Mixx-DJ-MCP — Product Requirements Document v0.1
+# Mixx-DJ-MCP — Product Requirements Document
 
-**Status**: Draft
+**Status**: v0.1.0 Shipped (2026-07-22)
 **Author**: Sandra Schipal
 **Created**: 2026-07-22
 
@@ -14,9 +14,7 @@ The gap: A DJ using Claude to plan a set must manually switch between the AI and
 
 ## Solution
 
-**Mixx-DJ-MCP** — a FastMCP 3.4+ server that bridges LLM agents to Mixxx via its built-in OSC (Open Sound Control) protocol. The server exposes intuitive deck control, library search, effect management, and mixer operations as composable MCP tools.
-
-The architecture follows fleet standards: FastMCP portmanteau tools, Prefab UI cards for in-chat visualization, a SOTA React webapp, Tauri NSIS installer for desktop deployment, and MCPB bundle for Claude Desktop.
+**Mixx-DJ-MCP** — a FastMCP 3.4+ server that bridges LLM agents to Mixxx via its built-in OSC protocol. The server exposes intuitive deck control, library search, effect management, and mixer operations as composable MCP tools using the fleet portmanteau pattern.
 
 ## Target Users
 
@@ -36,55 +34,74 @@ The architecture follows fleet standards: FastMCP portmanteau tools, Prefab UI c
 - As a radio host, I want voice-activated talkover and crossfader control.
 - As a developer, I want to use Prefab cards in-chat to see deck status at a glance.
 
-## Key Features
+## Shipped Features (v0.1.0)
 
-### v0.1 (Core)
+### Core MCP Layer
 
-- [x] OSC bridge to Mixxx (ports 11118/11119) via python-osc
-- [x] Deck control: play, stop, cue, cue_goto, loop, loop_roll, sync, sync_enable
-- [x] Hot cues: set, clear, navigate (4 hot cues per deck)
-- [x] Library: full-text search, crate/playlist browsing, track info
-- [x] Load track to any deck
-- [x] Per-deck transport: seek, beatjump, beatloop, rate, rate_reset, nudge
-- [x] Per-deck audio: pregain, filter high/mid/low
-- [x] Mixer: crossfader, crossfader curve, per-channel volume/gain/balance/headphone/talkover/orientation
-- [x] Effects: chain enable/select/focus, per-effect enable/param, quick effect, clear chain
-- [x] Prefab UI cards for deck status, mixer state, library search, track info
-- [x] Conversational return format (message + data + success keys)
+- [x] OSC bridge to Mixxx via python-osc (UDP ports 11118/11119)
+- [x] `mixx_deck` (17 ops): play_pause, stop, load, cue_set, cue_play, loop_activate, loop_beat, beatloop, rate_set, rate_temp, sync_enable, sync_leader, seek, scratch, hotcue_activate, quantize, keylock
+- [x] `mixx_library` (8 ops): search, browse_crate, browse_playlist, load_selected, get_track_info, get_bpm, get_key, get_replay_gain
+- [x] `mixx_effects` (7 ops): list_effects, chain_load, chain_clear, parameter_set, meta_set, quick_effect_set, effect_enable
+- [x] `mixx_mixer` (8 ops): crossfader_set, crossfader_curve, gain_set, eq_set, volume_set, headphone_cue, talkover, mic_gain
+- [x] 3 Prefab UI cards: show_deck_status_card, show_mixer_status_card, show_library_status_card
+- [x] Conversational return format (success + message + data keys)
 - [x] Error handling with recovery suggestions
+- [x] FastAPI REST API: /api/health, /api/deck/status, /api/settings, /api/v1/diagnostics
+- [x] CORS configured for Tauri WebView + Tailscale + LAN IPs
 
-### v0.2 (Refinement)
+### Webapp (SOTA)
 
-- [ ] Full 4-deck control parity
-- [ ] Scratching with position/timing
-- [ ] Recording control (start/stop recording)
-- [ ] Auto-DJ mode control
-- [ ] Waveform position polling via OSC feedback
-- [ ] Track metadata enrichment (BPM, key, Rekordbox tag parsing)
+- [x] React 19 / Vite 6 / Tailwind 4 / Zustand 5 / Framer Motion / Lucide
+- [x] 7 pages: Dashboard, Decks, Library, Effects, Chat, Tools, Settings
+- [x] Dark theme with Amber accents
+- [x] data-testid attributes for CUA/Playwright testing
+- [x] Swagger UI + ReDoc at /docs
 
-### v0.3 (Webapp + Tauri)
+### Desktop & Distribution
 
-- [ ] SOTA webapp: React/Vite/Bun/Tailwind/Zustand
-- [ ] Dashboard with live Mixxx connection status
-- [ ] Deck status indicators (track, BPM, play state, loop state)
-- [ ] Library browser with search
-- [ ] Chat page with LLM integration
-- [ ] Settings page for OSC port configuration
-- [ ] Tauri NSIS build pipeline with embedded backend
-- [ ] Zoom support (Ctrl+scroll) in webview
-- [ ] Backend health endpoint + dashboard KPIs
-- [ ] CORS configuration for Tauri WebView
+- [x] Tauri 2.0 NSIS build pipeline with embedded backend (native/)
+- [x] MCPB packaging (mcpb/)
+- [x] Start scripts (start.ps1, start.bat)
+- [x] .env.example configuration
 
-### v0.5 (Release)
+### Testing & CI
 
-- [ ] MCPB bundle (.mcpb)
-- [ ] Playwright E2E tests
-- [ ] CUA-NSIS smoke test (7 phases)
-- [ ] GitHub Actions CI/CD
-- [ ] llms.txt + llms-full.txt documentation
-- [ ] Glama registry entry
-- [ ] Session context injection (.claude-plugin, .cursorrules)
-- [ ] Mixxx 2.5+ compatibility validated
+- [x] 41 pytest tests (bridge mock, deck, effects, mixer)
+- [x] Playwright E2E tests
+- [x] CUA-NSIS smoke test (7 phases)
+- [x] GitHub Actions CI (.github/workflows/ci.yml)
+- [x] Ruff lint + format
+
+### Documentation
+
+- [x] llms.txt + llms-full.txt
+- [x] README with Quick Start, Mixxx OSC config, port table, tool reference
+- [x] CHANGELOG
+- [x] PRD
+- [x] Session context injection (.claude-plugin, .cursorrules)
+- [x] Glama registry entry (glama.json)
+
+## v0.2 Roadmap (Refinement)
+
+| Priority | Item | Rationale |
+|----------|------|-----------|
+| P0 | **Real Mixxx verification testing** | All current testing is mock-based. Run actual Mixxx integration tests on Windows with Mixxx 2.5.6 |
+| P1 | **OSC feedback reliability** | Improve state tracking from OSC feedback (port 11118) — currently best-effort. Add timeout detection for lost commands |
+| P1 | **Webapp UI polish** | Prefab card alignment, responsive layout fixes, loading states on deck status pages |
+| P2 | **Tauri build verification** | Run just build-native + just cua-nsis-test end-to-end, verify NSIS installer works on clean Windows |
+| P2 | **Recording control** | Start/stop recording via OSC |
+| P3 | **Auto-DJ mode toggle** | Enable/disable Mixxx Auto-DJ via OSC |
+| P3 | **Waveform position polling** | Track position slider feedback in webapp |
+| P3 | **Community feedback** | Open issues on GitHub, gather early-adopter use cases |
+| P4 | **Track metadata enrichment** | BPM, key, Rekordbox tag parsing beyond what Mixxx provides |
+
+## v0.3 Roadmap (Advanced)
+
+- Cue point management with beat grid analysis
+- Smart crate creation from LLM queries
+- Mix recording and export workflow
+- Session history and playback analytics
+- Deck 3-4 control parity with decks 1-2
 
 ## Non-Goals
 
@@ -104,75 +121,60 @@ The architecture follows fleet standards: FastMCP portmanteau tools, Prefab UI c
 Mixxx exposes a bidirectional OSC surface. The server maintains a persistent UDP socket that:
 
 1. Sends OSC commands to Mixxx's input port (11119) for control operations
-2. Optionally receives OSC feedback from Mixxx's output port (11118) for state tracking
+2. Receives OSC feedback from Mixxx's output port (11118) for state tracking
 
 ```
 mixx_dj_mcp/
-├── server.py             # FastMCP app, lifecycle, lifespan
-├── transport.py          # Dual transport (stdio/HTTP)
+├── server.py             # FastMCP app, FastAPI, lifespan
+├── http_app.py           # FastAPI factory + CORS + MCP mount
 ├── config.py             # Env-based config with defaults
-├── osc/
-│   ├── bridge.py         # OSC UDP client + connection management
-│   ├── addresses.py      # OSC address constants and mappings
-│   └── feedback.py       # OSC feedback receiver (future)
+├── bridge/
+│   ├── osc_bridge.py     # OSC UDP client + state tracking
+│   └── protocol.py       # OSC address constants and CO mappings
 ├── tools/
-│   ├── deck.py           # mixx_deck portmanteau
+│   ├── deck_control.py   # mixx_deck portmanteau
 │   ├── library.py        # mixx_library portmanteau
 │   ├── effects.py        # mixx_effects portmanteau
-│   └── mixer.py          # mixx_mixer portmanteau
-├── models/
-│   └── schemas.py        # Pydantic models for tool I/O
-└── skills/
-    └── mixx-dj/
-        └── SKILL.md      # Skill definition
+│   ├── mixer.py          # mixx_mixer portmanteau
+│   └── prefab_cards.py   # Prefab UI card tools
 ```
 
-### MCP Tool Layer
-
-All tools use the fleet portmanteau pattern with an `operation` enum discriminator:
-
-- `mixx_deck(deck: int, operation: Literal[...], ...)` — single tool for all deck operations
-- `mixx_library(operation: Literal[...], ...)` — library search and browse
-- `mixx_effects(chain: int, operation: Literal[...], ...)` — effect chain control
-- `mixx_mixer(channel: int, operation: Literal[...], ...)` — mixer operations
-
 ### REST API
-
-FastMCP HTTP mode exposes:
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/health` | Server health + Mixxx connection status |
+| `GET /api/deck/status` | Live deck states (play, BPM, volume, etc.) |
+| `GET /api/settings` | Current OSC/host configuration |
 | `GET /api/v1/diagnostics` | Full diagnostics (tool count, OSC status) |
 | `GET /api/skills` | List available skills |
 | `POST /mcp` | MCP streamable HTTP transport |
+| `GET /docs` | Swagger UI |
 
-### Webapp
+### Ports
 
-Standard SOTA stack: React/Vite/Bun/Tailwind CSS dark theme/Zustand/Lucide/Framer Motion.
-Pages: Dashboard, Tools, Chat, Skills, Settings.
-
-### Tauri NSIS
-
-Single-installer pattern: PyInstaller-freezed backend embedded in `bundle.resources`, Rust shell spawns child process on launch.
+| Port | Service |
+|------|---------|
+| 11116 | Backend HTTP |
+| 11117 | Frontend Vite |
+| 11118 | OSC listener (Mixxx feedback) |
+| 11119 | OSC sender (commands to Mixxx) |
 
 ## Milestones
 
-| Version | Scope | Timeline |
-|---------|-------|----------|
-| v0.1 | OSC core + library search + deck control + effects + mixer | 2026-07-22 |
-| v0.2 | Refinement + polling feedback + recording + Auto-DJ | TBD |
-| v0.3 | SOTA webapp + Tauri NSIS installer | TBD |
-| v0.5 | MCPB + cert + CI/CD + fleet release | TBD |
+| Version | Scope | Timeline | Status |
+|---------|-------|----------|--------|
+| v0.1 | OSC core + deck control + library + effects + mixer + webapp + Tauri + MCPB | 2026-07-22 | ✅ Shipped |
+| v0.2 | Real Mixxx testing + OSC feedback reliability + UI polish + Tauri verification | TBD | 🔜 Planned |
+| v0.3 | Advanced cue + smart crates + recording + session history | TBD | 📋 Future |
 
 ## Open Questions
 
-1. **OSC message reliability** — UDP is fire-and-forget. How do we detect lost commands? Options: OSC feedback from Mixxx, periodic state polling, or accept best-effort.
-2. **Multiple simultaneous connections** — If both Claude Desktop and Cursor connect, do we allow concurrent OSC sessions? Likely yes (stateless OSC).
-3. **Security boundaries** — OSC is unauthenticated on localhost. Should we restrict binding to 127.0.0.1 only? Yes — default config enforces this.
-4. **Mixxx version compatibility** — OSC address paths may change between Mixxx versions. Document tested version(s) and add version detection.
-5. **Deck count** — Mixxx supports up to 4 decks by default, more with custom skins. Default to 4, configurable via env.
-6. **Feedback loop** — Without OSC feedback, the server is blind to Mixxx state changes (e.g., user pressing play on the keyboard). Solution: optional OSC feedback listener on port 11118.
+1. **OSC message reliability** — UDP is fire-and-forget. Current approach: best-effort send + optional state polling via OSC feedback on 11118. Consider adding periodic check pings.
+2. **Multiple simultaneous connections** — Stateless OSC supports concurrent clients fine. No issue known.
+3. **Security boundaries** — OSC bound to 127.0.0.1 by default. Enforced in config.py.
+4. **Mixxx version compatibility** — Verified against Mixxx 2.5.6. OSC address paths may change between major versions.
+5. **Deck count** — Mixed supports 4 decks by default. Currently all tools work with deck 1-4. Configurable in future.
 
 ## Reference
 
@@ -181,3 +183,4 @@ Single-installer pattern: PyInstaller-freezed backend embedded in `bundle.resour
 - [FastMCP 3.4 Docs](https://github.com/jlowin/fastmcp)
 - [Fleet Tauri Standard](https://github.com/sandraschi/mcp-central-docs/blob/main/standards/rules/tauri_nsis_building.md)
 - [SOTA Webapp Standard](https://github.com/sandraschi/mcp-central-docs/blob/main/standards/WEBAPP_SOTA_STANDARDS.md)
+- [Mixxx 2.5.6](https://mixxx.org/download/)

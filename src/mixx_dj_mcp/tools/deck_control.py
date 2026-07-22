@@ -8,9 +8,7 @@ from ..bridge.osc_bridge import get_bridge
 console = Console(file=__import__("sys").stderr)
 
 
-def register_deck_tools(mcp: FastMCP):
-    @mcp.tool()
-    async def mixx_deck(
+async def mixx_deck(
         operation: Literal[
             "play_pause", "stop", "load", "cue_set", "cue_play",
             "loop_activate", "loop_beat", "beatloop", "rate_set",
@@ -155,3 +153,7 @@ def register_deck_tools(mcp: FastMCP):
         except Exception as e:
             console.print(f"[red]Error in mixx_deck: {e}[/red]")
             return {"success": False, "message": str(e), "data": {}}
+
+
+def register_deck_tools(mcp: FastMCP):
+    mcp.tool()(mixx_deck)

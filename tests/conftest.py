@@ -4,52 +4,29 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 @pytest.fixture
 def mock_osc_bridge():
-    """Fixture providing a mock OSC bridge."""
     bridge = MagicMock()
-    bridge.send_message = AsyncMock(return_value=True)
-    bridge.receive_message = AsyncMock(return_value=None)
-    bridge.host = "127.0.0.1"
-    bridge.out_port = 9000
-    bridge.in_port = 8000
-    bridge.connected = True
+    bridge.is_connected.return_value = True
+    bridge.send = MagicMock(return_value=None)
+    bridge.get_state = MagicMock(return_value=0.0)
+    bridge.get_global_state = MagicMock(return_value=0.0)
     return bridge
 
 
-@pytest.fixture
-async def async_client():
-    """Fixture providing a test HTTP client for the FastAPI app."""
-    try:
-        from httpx import AsyncClient, ASGITransport
-        from mixx_dj_mcp.server import app
-
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
-    except ImportError:
-        pytest.skip("httpx not installed")
-
-
-@pytest.fixture
-def test_config():
-    """Fixture providing standard test configuration."""
-    return {
-        "host": "127.0.0.1",
-        "osc_out_port": 8000,
-        "osc_in_port": 9000,
-        "max_decks": 4,
-        "mixx_version": "2.4.0",
-    }
-
-
 @pytest.fixture(autouse=True)
-def auto_mock_osc():
-    """Auto-mock the OSC bridge for all tests to prevent real network calls."""
-    with patch("mixx_dj_mcp.bridge.osc_bridge.OSCBridge") as mock:
-        bridge_instance = MagicMock()
-        bridge_instance.send_message = MagicMock(return_value=True)
-        bridge_instance.host = "127.0.0.1"
-        bridge_instance.out_port = 9000
-        bridge_instance.in_port = 8000
-        bridge_instance.connected = True
-        mock.return_value = bridge_instance
-        yield mock
+def auto_mock_bridge():
+    with patch("mixx_dj_mcp.tools.deck_control.get_bridge") as deck_mock, \
+         patch("mixx_dj_mcp.tools.library.get_bridge") as lib_mock, \
+         patch("mixx_dj_mcp.tools.effects.get_bridge") as eff_mock, \
+         patch("mixx_dj_mcp.tools.mixer.get_bridge") as mix_mock, \
+         patch("mixx_dj_mcp.tools.prefab_cards.get_bridge") as pre_mock:
+        b = MagicMock()
+        b.is_connected.return_value = True
+        b.send = MagicMock()
+        b.get_state = MagicMock(return_value=0.0)
+        b.get_global_state = MagicMock(return_value=0.0)
+        deck_mock.return_value = b
+        lib_mock.return_value = b
+        eff_mock.return_value = b
+        mix_mock.return_value = b
+        pre_mock.return_value = b
+        yield b
