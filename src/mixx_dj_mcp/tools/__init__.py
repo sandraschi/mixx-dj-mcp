@@ -12,6 +12,7 @@ def register_all_tools(mcp):
     from .skin_manager import register_skin_tools
     from .smart_crate import register_crate_tools
     from .stems import register_stems_tools
+    from .transitions import register_transition_tools
     from .daw import register_daw_tools
     from .vinyl import register_vinyl_tools
 
@@ -26,4 +27,5 @@ def register_all_tools(mcp):
     register_skin_tools(mcp)
     register_crate_tools(mcp)
     register_stems_tools(mcp)
+    register_transition_tools(mcp)
     register_vinyl_tools(mcp)
