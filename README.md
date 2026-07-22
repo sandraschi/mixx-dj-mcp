@@ -92,6 +92,9 @@ Opens at `http://127.0.0.1:11117` — 8 pages: Cockpit, Dashboard, Decks, Librar
 | `mixx_effects` (7 ops) | `list_effects`, `chain_load`, `chain_clear`, `parameter_set`, `meta_set`, `quick_effect_set`, `effect_enable` | Effect chain and parameter control |
 | `mixx_mixer` (8 ops) | `crossfader_set`, `crossfader_curve`, `gain_set`, `eq_set`, `volume_set`, `headphone_cue`, `talkover`, `mic_gain` | Mixer channel control |
 | `mixx_crate` (4 ops) | `create`, `list`, `delete`, `add_track` | Smart crate mgmt via natural language |
+| `mixx_stems` (6 ops) | `separate`, `status`, `load_stems`, `transition`, `mute`, `volume` | Demucs stem separation + stem-aware crossfade |
+| `mixx_set` (2 ops) | `sequence`, `analyze_set` | AI set sequencing with harmonic mixing + energy curve |
+| `mixx_skin` (7 ops) | `list`, `search`, `install`, `uninstall`, `preview`, `create_video_skin`, `create_skin` | Skin browser + Inkscape-MCP skin generator |
 | `show_deck_status_card` | — | Prefab UI card for deck KPIs |
 | `show_mixer_status_card` | — | Prefab UI card for mixer state |
 | `show_library_status_card` | — | Prefab UI card for library status |
