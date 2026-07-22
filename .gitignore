@@ -59,6 +59,10 @@ reports/
 
 # Rust / Tauri
 target/
+native/resources/
+native/binaries/
+native/target/
+native/gen/
 
 # Node / Bun
 node_modules/

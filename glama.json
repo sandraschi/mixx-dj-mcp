@@ -1,0 +1,33 @@
+{
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "id": "mixx-dj-mcp",
+  "name": "Mixx-DJ-MCP",
+  "description": "Control Mixxx open-source DJ software through natural language. Search your library, cue tracks, set loops, apply effects, and mix — all from your AI assistant.",
+  "short_description": "AI-powered Mixxx DJ controller",
+  "icon": "https://raw.githubusercontent.com/sandraschi/mixx-dj-mcp/main/assets/icon.png",
+  "author": "sandraschi",
+  "homepage": "https://github.com/sandraschi/mixx-dj-mcp",
+  "repository": "https://github.com/sandraschi/mixx-dj-mcp",
+  "license": "MIT",
+  "categories": ["media", "music", "automation"],
+  "tags": ["mixxx", "dj", "osc", "audio", "live-mixing", "deck", "effects"],
+  "requirements": ["Mixxx 2.5+ with OSC enabled", "Python 3.12+", "bun for webapp"],
+  "tools": [
+    {
+      "name": "mixx_deck",
+      "description": "Full deck control: play, stop, cue, loop, sync, hot cues, scratch, seek, beatjump, beatloop, rate, pregain, filter high/mid/low, quantize, keylock, load track, eject"
+    },
+    {
+      "name": "mixx_library",
+      "description": "Library search, crate/playlist browse, track info, filter by BPM/genre/key"
+    },
+    {
+      "name": "mixx_effects",
+      "description": "Effect chain management, enable/disable effects, parameter control, quick effect presets"
+    },
+    {
+      "name": "mixx_mixer",
+      "description": "Crossfader, per-channel EQ (high/mid/low), gain, volume, headphone cue, talkover, orientation, balance"
+    }
+  ]
+}

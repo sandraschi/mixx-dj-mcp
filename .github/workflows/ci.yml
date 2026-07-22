@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  PYTHON_VERSION: "3.12"
+  BUN_VERSION: "1"
+
+jobs:
+  lint-test:
+    name: Lint & Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python dependencies
+        run: uv sync --frozen
+
+      - name: Setup Bun ${{ env.BUN_VERSION }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install webapp dependencies
+        working-directory: web_sota
+        run: bun install --frozen-lockfile
+        continue-on-error: true
+
+      - name: Lint (ruff)
+        run: uv run ruff check src/
+
+      - name: Format check (ruff)
+        run: uv run ruff format src/ --check
+
+      - name: TypeScript typecheck
+        working-directory: web_sota
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Test (pytest)
+        run: uv run pytest tests/ -q --tb=short
+
+      - name: Build webapp
+        working-directory: web_sota
+        run: bun run build
+        continue-on-error: true
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: lint-test
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python dependencies
+        run: uv sync --frozen
+
+      - name: Install Playwright browsers
+        working-directory: web_sota
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        working-directory: web_sota
+        run: npx playwright test

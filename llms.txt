@@ -1,0 +1,53 @@
+# Mixx-DJ-MCP - LLM Index
+
+## Overview
+
+Control Mixxx open-source DJ software through natural language.
+Search your library, cue tracks, set loops, apply effects, and mix — all from your AI assistant.
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/mixx_dj_mcp/server.py` | FastMCP app, lifespan, tool registration |
+| `src/mixx_dj_mcp/osc/bridge.py` | OSC UDP client to Mixxx (ports 11118/11119) |
+| `src/mixx_dj_mcp/osc/addresses.py` | OSC address constants for all Mixxx controls |
+| `src/mixx_dj_mcp/tools/deck.py` | `mixx_deck` portmanteau — transport, cues, loops, sync |
+| `src/mixx_dj_mcp/tools/library.py` | `mixx_library` portmanteau — search, browse, metadata |
+| `src/mixx_dj_mcp/tools/effects.py` | `mixx_effects` portmanteau — chains, parameters |
+| `src/mixx_dj_mcp/tools/mixer.py` | `mixx_mixer` portmanteau — crossfader, EQ, gain |
+| `src/mixx_dj_mcp/config.py` | Environment-based configuration |
+| `src/mixx_dj_mcp/models/schemas.py` | Pydantic models for tool I/O |
+| `bridge/README.md` | Mixxx OSC configuration and address reference |
+| `start.ps1` | SOTA startup script |
+| `web_sota/` | React/Vite/Bun webapp dashboard |
+| `native/` | Tauri 2.0 NSIS build pipeline |
+
+## Quick Commands
+
+```bash
+uv sync                          # Install Python deps
+uv run uvicorn mixx_dj_mcp.server:app --port 11116 --reload   # Dev server
+uv run pytest tests/ -q          # Run tests
+uv run ruff check src/           # Lint
+just build-native                # Build NSIS installer
+mcpb pack . dist/mixx-dj-mcp.mcpb  # Build MCPB bundle
+```
+
+## Ports
+
+| Port | Service |
+|------|---------|
+| 11116 | Backend (FastMCP HTTP + REST) |
+| 11117 | Frontend (Vite dev server) |
+| 11118 | Mixxx OSC output (feedback from Mixxx) |
+| 11119 | Mixxx OSC input (commands to Mixxx) |
+
+## Mixxx Setup
+
+1. Preferences → MIDI/OSC → Enable OSC
+2. Output port: 11118, Input port: 11119
+3. Send to: 127.0.0.1
+4. Restart Mixxx
+
+See `llms-full.txt` for comprehensive tool reference, OSC address mappings, and troubleshooting.
