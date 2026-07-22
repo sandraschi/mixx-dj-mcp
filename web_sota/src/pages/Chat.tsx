@@ -73,6 +73,9 @@ export default function Chat() {
   });
   const [skillContent, setSkillContent] = useState("");
   const [providerStatus, setProviderStatus] = useState<"detecting" | "online" | "offline">("detecting");
+  const [providerName, setProviderName] = useState("Ollama");
+  const [providerHost, setProviderHost] = useState(":11434");
+  const [modelName, setModelName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -105,7 +108,15 @@ export default function Chat() {
     (async () => {
       try {
         const r = await fetch(`${API_BASE}/api/llm/discover`, { signal: AbortSignal.timeout(3000) });
-        setProviderStatus(r.ok ? "online" : "offline");
+        if (r.ok) {
+          const data = await r.json();
+          setProviderStatus(data.status === "online" ? "online" : "offline");
+          setProviderName(data.provider || "unknown");
+          setProviderHost(data.host || "");
+          if (data.models?.length) setModelName(data.models[0]);
+        } else {
+          setProviderStatus("offline");
+        }
       } catch {
         setProviderStatus("offline");
       }
@@ -141,7 +152,7 @@ export default function Chat() {
       const r = await fetch(baseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: chatMessages }),
+        body: JSON.stringify({ messages: chatMessages, model: modelName || undefined }),
       });
 
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -214,8 +225,20 @@ export default function Chat() {
                   : "bg-slate-800 text-slate-500"
             }`}
           >
-            {providerStatus === "online" ? "LLM Online" : providerStatus === "offline" ? "No Provider" : "Detecting..."}
+            {providerStatus === "online"
+              ? `${providerName} on ${providerHost}`
+              : providerStatus === "offline"
+                ? "No Provider"
+                : "Detecting..."}
           </span>
+          <input
+            type="text"
+            value={modelName}
+            onChange={(e) => setModelName(e.target.value)}
+            placeholder="model"
+            className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[10px] text-slate-400 w-24 font-mono focus:outline-none focus:border-amber-500/50"
+            data-testid="model-input"
+          />
         </div>
         <div className="flex items-center gap-1" data-testid="chat-controls">
           <button

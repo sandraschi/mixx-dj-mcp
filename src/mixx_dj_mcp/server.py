@@ -144,6 +144,27 @@ async def deck_status():
     return {"decks": decks, "crossfader": bridge.get_global_state("crossfader", 0.0)}
 
 
+@fastapi_app.get("/api/llm/discover")
+async def llm_discover():
+    """Detect local LLM provider."""
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get("http://localhost:11434/api/tags")
+            if r.status_code == 200:
+                models = r.json().get("models", [])
+                return {"provider": "ollama", "host": "localhost:11434", "status": "online", "models": [m["name"] for m in models]}
+    except Exception:
+        pass
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get("http://localhost:1234/api/v1/models")
+            if r.status_code == 200:
+                return {"provider": "lmstudio", "host": "localhost:1234", "status": "online", "models": []}
+    except Exception:
+        pass
+    return {"provider": "none", "status": "offline", "models": []}
+
+
 @fastapi_app.get("/api/settings")
 async def api_settings():
     return {
@@ -183,15 +204,16 @@ async def deck_sync(deck_id: int):
 
 @fastapi_app.post("/api/llm/chat")
 async def llm_chat(body: dict):
-    """Chat endpoint — tries Ollama, falls back to MCP tool guidance."""
+    """Chat endpoint — tries Ollama, falls back to command execution."""
     messages = body.get("messages", [])
+    model = body.get("model", "llama3.2:3b")
     user_msg = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
 
-    # Try local Ollama
+    # Try local Ollama with requested model
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.post("http://localhost:11434/api/chat", json={
-                "model": "llama3.2:3b",
+                "model": model,
                 "messages": messages,
                 "stream": False,
             })
