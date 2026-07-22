@@ -81,6 +81,7 @@ mixx-dj-mcp (FastMCP 3.4+)
 | [docs/INSTALL.md](docs/INSTALL.md) | Detailed install guide, OSC config, Tauri build, MCPB, troubleshooting |
 | [docs/TOOLS.md](docs/TOOLS.md) | Full tool reference — operations, parameters, returns, examples |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | OSC bridge, REST API, webapp, Tauri shell, cross-MCP connections |
+  - **Algoriddim comparison** — Feature comparison vs djay iOS
 | [docs/VIDEO.md](docs/VIDEO.md) | Video features (requires mixxxxx fork) |
 | [docs/AI_TRANSITIONS.md](docs/AI_TRANSITIONS.md) | AI transition effects, prompts, examples |
 | [docs/DJ_LANDSCAPE.md](docs/DJ_LANDSCAPE.md) | DJ software comparison — why Mixxx + open source won |
