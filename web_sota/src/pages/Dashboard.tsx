@@ -173,6 +173,11 @@ export default function Dashboard() {
                     No video support
                   </span>
                 )}
+                {forkData.fork === "mixxxxx" && (
+                  <p className="text-[10px] text-slate-500 mt-2">
+                    Video plays in mixxxxx window (projector). Webapp shows butterchurn MilkDrop visuals.
+                  </p>
+                )}
               </div>
               {forkData.fork === "mixxxxx" && (
                 <div className="flex flex-wrap gap-2 mt-2">

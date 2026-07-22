@@ -11,6 +11,7 @@ import { useStore } from "../lib/store";
 import { apiPost } from "../lib/api";
 import PlexPanel from "../components/PlexPanel";
 import SFXPanel from "../components/SFXPanel";
+import SongGenPanel from "../components/SongGenPanel";
 import DeckStrip from "../components/DeckStrip";
 import Visualizer from "../components/Visualizer";
 import type { CockpitMessage } from "../lib/types";
@@ -105,9 +106,10 @@ export default function Cockpit() {
       </div>
 
       {/* Two-column panel area */}
-      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
         <PlexPanel />
         <SFXPanel />
+        <SongGenPanel />
       </div>
 
       {/* Deck status strip */}
