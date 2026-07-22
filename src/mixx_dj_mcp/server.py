@@ -168,30 +168,66 @@ async def _ensure_music_model():
 
 @fastapi_app.post("/api/music/generate")
 async def music_generate(body: dict):
-    """Generate music using MusicGen (HuggingFace). First call loads model (~2GB)."""
+    """Generate music — tries: Lyria (Vertex AI) → MusicGen (local) → songgeneration-mcp."""
     prompt = body.get("prompt", "")
     duration = int(body.get("duration", 15))
     if not prompt:
         return {"error": "prompt required"}
 
-    result = await _ensure_music_model()
-    if not result:
-        return {"error": "MusicGen model not available. Install with: uv add transformers torch scipy"}
-
-    processor, model, device = result
+    # Backend 1: Lyria (Google Vertex AI, requires GOOGLE_CLOUD_PROJECT)
     try:
-        import torch, scipy.io.wavfile, tempfile, os
-        inputs = processor(text=[prompt], padding=True, return_tensors="pt").to(device)
-        audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3.0, max_new_tokens=int(duration * 50))
-
-        out_dir = tempfile.mkdtemp()
-        out_path = os.path.join(out_dir, "generated.wav")
-        sampling_rate = model.config.audio_encoder.sampling_rate
-        scipy.io.wavfile.write(out_path, rate=sampling_rate, data=audio_values[0, 0].cpu().numpy())
-
-        return {"success": True, "file": out_path, "duration": duration, "prompt": prompt, "model": "musicgen-small", "device": device}
+        from google import genai
+        from google.genai import types
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        if project:
+            client = genai.Client(vertexai=True, project=project, location="global")
+            import tempfile, os as _os
+            out_dir = tempfile.mkdtemp()
+            out_path = _os.path.join(out_dir, "lyria.wav")
+            response = client.models.generate_content(
+                model="lyria-3-pro-preview",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    audio_timestamp=True,
+                    output_audio_format="wav",
+                ),
+            )
+            if response.candidates and response.candidates[0].audio:
+                with open(out_path, "wb") as f:
+                    f.write(response.candidates[0].audio.data)
+                return {"success": True, "file": out_path, "duration": duration, "prompt": prompt, "model": "lyria-3-pro-preview", "backend": "lyria"}
     except Exception as e:
-        return {"error": str(e)}
+        console.print(f"[yellow]Lyria failed: {e}[/yellow]")
+
+    # Backend 2: MusicGen (local HuggingFace, first load downloads ~2GB)
+    result = await _ensure_music_model()
+    if result:
+        try:
+            processor, model, device = result
+            import torch, scipy.io.wavfile, tempfile, os as _os
+            inputs = processor(text=[prompt], padding=True, return_tensors="pt").to(device)
+            audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3.0, max_new_tokens=int(duration * 50))
+            out_dir = tempfile.mkdtemp()
+            out_path = _os.path.join(out_dir, "generated.wav")
+            sampling_rate = model.config.audio_encoder.sampling_rate
+            scipy.io.wavfile.write(out_path, rate=sampling_rate, data=audio_values[0, 0].cpu().numpy())
+            return {"success": True, "file": out_path, "duration": duration, "prompt": prompt, "model": "musicgen-small", "backend": "musicgen"}
+        except Exception as e:
+            console.print(f"[yellow]MusicGen failed: {e}[/yellow]")
+
+    # Backend 3: songgeneration-mcp (cloud Studio API)
+    try:
+        import httpx
+        r = await httpx.AsyncClient(timeout=120).post("http://127.0.0.1:10885/api/v1/generate",
+            json={"prompt": prompt, "duration": duration})
+        if r.status_code == 200:
+            data = r.json()
+            data["backend"] = "songgen-studio"
+            return data
+    except Exception as e:
+        console.print(f"[yellow]songgeneration-mcp failed: {e}[/yellow]")
+
+    return {"error": "All music generation backends failed. Try: uv add transformers torch scipy (MusicGen) or set GOOGLE_CLOUD_PROJECT (Lyria)"}
 
 
 @fastapi_app.get("/api/llm/discover")
