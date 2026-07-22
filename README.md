@@ -81,7 +81,7 @@ bun install
 bun run dev
 ```
 
-Opens at `http://127.0.0.1:11117` — 7 pages: Dashboard, Decks, Library, Effects, Chat, Tools, Settings.
+Opens at `http://127.0.0.1:11117` — 8 pages: Cockpit, Dashboard, Decks, Library, Effects, Chat, Tools, Settings. Cockpit integrates Plex search, SFX browser, deck status, and AI assistant in one view.
 
 ## Tool Reference
 
@@ -91,6 +91,7 @@ Opens at `http://127.0.0.1:11117` — 7 pages: Dashboard, Decks, Library, Effect
 | `mixx_library` (8 ops) | `search`, `browse_crate`, `browse_playlist`, `load_selected`, `get_track_info`, `get_bpm`, `get_key`, `get_replay_gain` | Library search and navigation |
 | `mixx_effects` (7 ops) | `list_effects`, `chain_load`, `chain_clear`, `parameter_set`, `meta_set`, `quick_effect_set`, `effect_enable` | Effect chain and parameter control |
 | `mixx_mixer` (8 ops) | `crossfader_set`, `crossfader_curve`, `gain_set`, `eq_set`, `volume_set`, `headphone_cue`, `talkover`, `mic_gain` | Mixer channel control |
+| `mixx_crate` (4 ops) | `create`, `list`, `delete`, `add_track` | Smart crate mgmt via natural language |
 | `show_deck_status_card` | — | Prefab UI card for deck KPIs |
 | `show_mixer_status_card` | — | Prefab UI card for mixer state |
 | `show_library_status_card` | — | Prefab UI card for library status |
@@ -179,7 +180,7 @@ mcpb pack . dist/mixx-dj-mcp.mcpb
 
 ```bash
 just lint        # ruff check + format
-just test        # pytest (41 tests)
+just test        # pytest (42 tests)
 just serve       # uvicorn dev server on :11116
 just build-native  # Tauri NSIS build
 just cua-nsis-test # CUA smoke test
@@ -208,6 +209,10 @@ uv run ruff format src/ --check
 | `/api/deck/status` | GET | Live deck states (play, BPM, volume, etc.) |
 | `/api/settings` | GET | Current OSC/host configuration |
 | `/api/v1/diagnostics` | GET | Full diagnostics (tool count, OSC, system) |
+| `/api/v1/deck/{id}/load` | POST | REST deck handoff (load track) |
+| `/api/v1/deck/{id}/play_pause` | POST | REST deck handoff (play/pause/toggle) |
+| `/api/v1/deck/{id}/sync` | POST | REST deck handoff (sync) |
+| `/api/v1/deck/{id}/cue` | POST | REST deck handoff (cue) |
 | `/docs` | GET | Swagger UI |
 | `/redoc` | GET | ReDoc |
 
