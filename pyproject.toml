@@ -54,6 +54,10 @@ dev = [
     "pytest-cov>=5.0.0",
     "mypy>=1.10.0",
 ]
+vinyl = [
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

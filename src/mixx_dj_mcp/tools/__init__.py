@@ -12,6 +12,7 @@ def register_all_tools(mcp):
     from .smart_crate import register_crate_tools
 
     from .stems import register_stems_tools
+    from .vinyl import register_vinyl_tools
 
     register_deck_tools(mcp)
     register_library_tools(mcp)
@@ -22,3 +23,4 @@ def register_all_tools(mcp):
     register_skin_tools(mcp)
     register_crate_tools(mcp)
     register_stems_tools(mcp)
+    register_vinyl_tools(mcp)
