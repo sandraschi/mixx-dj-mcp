@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+from pathlib import Path
 from typing import Any, Literal
 
 from fastmcp import FastMCP
@@ -186,13 +187,62 @@ def _write_mixx_playlist(db_path: str, name: str, tracks: list[dict]) -> bool:
         return False
 
 
+def _get_recordings_dir() -> str | None:
+    """Find Mixxx recording directory from config or default."""
+    import configparser
+
+    config_paths = [
+        os.path.expanduser("~/.mixxx/mixxx.cfg"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Mixxx", "mixxx.cfg"),
+    ]
+
+    for cfg_path in config_paths:
+        if os.path.exists(cfg_path):
+            try:
+                config = configparser.ConfigParser()
+                config.read(cfg_path)
+                dir_path = config.get("Recording", "RecordingPath", fallback=None)
+                if dir_path and os.path.exists(dir_path):
+                    return dir_path
+            except Exception:
+                pass
+
+    fallbacks = [
+        os.path.expanduser("~/Mixxx/Recordings"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Mixxx", "Recordings"),
+    ]
+    for fb in fallbacks:
+        if os.path.exists(fb):
+            return fb
+    return None
+
+
+def _get_audio_duration(path: str) -> float:
+    """Get audio file duration using ffprobe."""
+    import subprocess
+
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", path],
+            capture_output=True,
+            timeout=15,
+        )
+        if r.returncode == 0:
+            data = json.loads(r.stdout)
+            return float(data.get("format", {}).get("duration", 0))
+    except Exception:
+        pass
+    return 0
+
+
 def register_sequencer_tools(mcp: FastMCP):
     @mcp.tool()
     async def mixx_set(
-        operation: Literal["sequence", "analyze_set"],
+        operation: Literal["sequence", "record", "analyze_set"],
         crate: str = "",
         name: str = "",
         energy_curve: str = "build_peak_cooldown",
+        analyze_type: str = "recording",
     ) -> dict[str, Any]:
         """
         AI-assisted set sequencing and analysis.
@@ -203,14 +253,16 @@ def register_sequencer_tools(mcp: FastMCP):
         - sequence: Generate an optimized track order from a crate (requires crate)
           Uses local Ollama (llama3.2:3b) for harmonic mixing, energy curve, and
           phrase-aligned transitions.
-        - analyze_set: Analyze a recorded set for BPM consistency, transitions, etc.
+        - record: Start/stop session recording via OSC
+        - analyze_set: Analyze a recorded session or mix for BPM transitions, energy, etc.
 
         Returns:
             Dict with ordered track list and reasoning
 
         Examples:
             mixx_set("sequence", crate="Peak Time", name="Friday Gig")
-            mixx_set("analyze_set", name="Last Saturday")
+            mixx_set("record")
+            mixx_set("analyze_set", name="Last Saturday", analyze_type="recording")
         """
         try:
             if operation == "sequence":
@@ -240,12 +292,45 @@ def register_sequencer_tools(mcp: FastMCP):
                     },
                 }
 
+            elif operation == "record":
+                from mixx_dj_mcp.osc.bridge import get_bridge
+
+                bridge = get_bridge()
+                bridge.send("/recording", 1.0)
+                return {"success": True, "message": "Session recording toggled", "data": {"status": "recording"}}
+
             elif operation == "analyze_set":
-                return {
-                    "success": True,
-                    "message": "Set analysis not yet implemented (needs recorded session data)",
-                    "data": {"name": name, "note": "Recording + analysis coming in next sprint"},
-                }
+                if analyze_type == "recording":
+                    recordings_dir = _get_recordings_dir()
+                    if not recordings_dir:
+                        return {"success": False, "message": "Recording directory not found", "data": {}}
+
+                    recordings = sorted(Path(recordings_dir).glob("*.wav"), key=os.path.getmtime, reverse=True)
+                    recordings += sorted(Path(recordings_dir).glob("*.mp3"), key=os.path.getmtime, reverse=True)
+                    if not recordings:
+                        return {"success": False, "message": "No recordings found", "data": {}}
+
+                    latest = recordings[0]
+                    duration = _get_audio_duration(str(latest))
+
+                    return {
+                        "success": True,
+                        "message": f"Analyzed recording: {latest.name} ({duration:.0f}s)",
+                        "data": {
+                            "file": str(latest),
+                            "duration_seconds": duration,
+                            "note": "Full transition analysis requires stem separation + BPM detection (coming in v2)",
+                        },
+                    }
+                else:
+                    return {
+                        "success": True,
+                        "message": (
+                            "Mix analysis coming soon: will detect transitions, "
+                            "BPM consistency, phrase alignment"
+                        ),
+                        "data": {},
+                    }
 
             else:
                 return {"success": False, "message": f"Unknown operation: {operation}", "data": {}}
