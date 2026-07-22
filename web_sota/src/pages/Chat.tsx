@@ -231,14 +231,19 @@ export default function Chat() {
                 ? "No Provider"
                 : "Detecting..."}
           </span>
-          <input
-            type="text"
+          <select
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
-            placeholder="model"
-            className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[10px] text-slate-400 w-24 font-mono focus:outline-none focus:border-amber-500/50"
+            className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[10px] text-slate-400 font-mono focus:outline-none focus:border-amber-500/50"
             data-testid="model-input"
-          />
+          >
+            <option value="">auto</option>
+            <option value="llama3.2:3b">llama3.2:3b</option>
+            <option value="llama3.1:8b">llama3.1:8b</option>
+            <option value="qwen2.5:7b">qwen2.5:7b</option>
+            <option value="gemma3:12b">gemma3:12b</option>
+            <option value="mistral:7b">mistral:7b</option>
+          </select>
         </div>
         <div className="flex items-center gap-1" data-testid="chat-controls">
           <button
