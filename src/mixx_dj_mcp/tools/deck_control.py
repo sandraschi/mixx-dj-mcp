@@ -14,6 +14,7 @@ async def mixx_deck(
             "loop_activate", "loop_beat", "beatloop", "rate_set",
             "rate_temp", "sync_enable", "sync_leader", "seek",
             "scratch", "hotcue_activate", "quantize", "keylock",
+            "video_enable", "video_fullscreen",
         ],
         deck: int = 1,
         value: float | None = None,
@@ -45,6 +46,8 @@ async def mixx_deck(
         - hotcue_activate: Activate hotcue by number (requires hotcue)
         - quantize: Toggle quantize mode (requires enable)
         - keylock: Toggle keylock (requires enable)
+        - video_enable: Toggle video playback for deck (requires enable)
+        - video_fullscreen: Toggle video fullscreen output (requires enable)
 
         Returns:
             Dict with operation result
@@ -146,6 +149,18 @@ async def mixx_deck(
                     return {"success": False, "message": "enable required for keylock", "data": {}}
                 bridge.send(f"/deck/{deck}/keylock", 1.0 if enable else 0.0)
                 return {"success": True, "message": f"Deck {deck}: keylock {'enabled' if enable else 'disabled'}", "data": {"deck": deck, "enable": enable}}
+
+            elif operation == "video_enable":
+                if enable is None:
+                    return {"success": False, "message": "enable required for video_enable", "data": {}}
+                bridge.send(f"/deck/{deck}/video_enabled", 1.0 if enable else 0.0)
+                return {"success": True, "message": f"Deck {deck}: video {'enabled' if enable else 'disabled'}", "data": {"deck": deck, "enable": enable}}
+
+            elif operation == "video_fullscreen":
+                if enable is None:
+                    return {"success": False, "message": "enable required for video_fullscreen", "data": {}}
+                bridge.send(f"/deck/{deck}/video_fullscreen", 1.0 if enable else 0.0)
+                return {"success": True, "message": f"Deck {deck}: video fullscreen {'on' if enable else 'off'}", "data": {"deck": deck, "enable": enable}}
 
             else:
                 return {"success": False, "message": f"Unknown operation: {operation}", "data": {}}

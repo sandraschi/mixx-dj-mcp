@@ -87,7 +87,7 @@ Opens at `http://127.0.0.1:11117` — 7 pages: Dashboard, Decks, Library, Effect
 
 | Tool | Operations | Description |
 |------|-----------|-------------|
-| `mixx_deck` (17 ops) | `play_pause`, `stop`, `load`, `cue_set`, `cue_play`, `loop_activate`, `loop_beat`, `beatloop`, `rate_set`, `rate_temp`, `sync_enable`, `sync_leader`, `seek`, `scratch`, `hotcue_activate`, `quantize`, `keylock` | Full deck control for all 4 decks |
+| `mixx_deck` (19 ops) | `play_pause`, `stop`, `load`, `cue_set`, `cue_play`, `loop_activate`, `loop_beat`, `beatloop`, `rate_set`, `rate_temp`, `sync_enable`, `sync_leader`, `seek`, `scratch`, `hotcue_activate`, `quantize`, `keylock`, `video_enable`, `video_fullscreen` | Full deck control for all 4 decks |
 | `mixx_library` (8 ops) | `search`, `browse_crate`, `browse_playlist`, `load_selected`, `get_track_info`, `get_bpm`, `get_key`, `get_replay_gain` | Library search and navigation |
 | `mixx_effects` (7 ops) | `list_effects`, `chain_load`, `chain_clear`, `parameter_set`, `meta_set`, `quick_effect_set`, `effect_enable` | Effect chain and parameter control |
 | `mixx_mixer` (8 ops) | `crossfader_set`, `crossfader_curve`, `gain_set`, `eq_set`, `volume_set`, `headphone_cue`, `talkover`, `mic_gain` | Mixer channel control |
@@ -143,6 +143,15 @@ await mixx_effects(rack=1, unit=1, operation="effect_enable", enable=True)
 ```
 
 The OSC bridge uses [python-osc](https://pypi.org/project/python-osc/) to send commands to Mixxx on port 11119 and receive status feedback on port 11118. Each tool maps to Mixxx Control Object (CO) addresses as documented in `src/mixx_dj_mcp/bridge/protocol.py`.
+
+## Mixxxxx Integration
+
+This server is companion to [Mixxxxx](https://github.com/sandraschi/mixxxxx) — a video-enabled fork of Mixxx 2.5.6 that adds FFmpeg-based video playback. Control video via:
+
+- `video_enable` — toggle video playback per deck (`enable=True/False`)
+- `video_fullscreen` — toggle fullscreen video output (`enable=True/False`)
+
+OSC addresses: `/deck/[N]/video_enabled` and `/deck/[N]/video_fullscreen`. See `projects/mixxxxx/README.md` in `mcp-central-docs` for build instructions.
 
 ## Tauri Native Installer
 
