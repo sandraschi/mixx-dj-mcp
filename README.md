@@ -1,25 +1,54 @@
-# Mixx-DJ-MCP — AI-Powered Mixxx DJ Control
+<div align="center">
+  <h1>🎧 Mixx-DJ-MCP</h1>
+  <p><strong>AI-Powered Mixxx DJ Control</strong> — 70+ MCP operations across 10 tools</p>
+  <p><em>Decks · Library · Effects · Mixer · Crates · Video · Stems · Set Planning · Vinyl Catalog · Skin Management · Controller Auto-Detect</em></p>
 
-[![GitHub stars](https://img.shields.io/github/stars/sandraschi/mixx-dj-mcp?style=flat-square)](https://github.com/sandraschi/mixx-dj-mcp)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square)](https://www.python.org/)
-[![FastMCP 3.4+](https://img.shields.io/badge/FastMCP-3.4%2B-purple?style=flat-square)](https://github.com/jlowin/fastmcp)
-[![Mixxx 2.5+](https://img.shields.io/badge/Mixxx-2.5%2B-orange?style=flat-square)](https://mixxx.org/)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
+  [![GitHub stars](https://img.shields.io/github/stars/sandraschi/mixx-dj-mcp?style=flat-square&logo=github)](https://github.com/sandraschi/mixx-dj-mcp)
+  [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+  [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+  [![FastMCP](https://img.shields.io/badge/FastMCP-3.4+-purple?style=flat-square&logo=python)](https://github.com/jlowin/fastmcp)
+  [![Mixxx](https://img.shields.io/badge/Mixxx-2.5+-orange?style=flat-square&logo=mediaengine)](https://mixxx.org)
+  [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
+  [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
+  [![Tests](https://img.shields.io/badge/Tests-41_passing-brightgreen?style=flat-square)](https://github.com/sandraschi/mixx-dj-mcp/actions)
+  [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
+  [![Topics](https://img.shields.io/badge/dynamic/json?style=flat-square&label=topics&query=%24&url=https%3A%2F%2Fimg.shields.io%2Fgithub%2Frelease%2Fsandraschi%2Fmixx-dj-mcp)](https://github.com/sandraschi/mixx-dj-mcp)
+</div>
 
-Control [Mixxx](https://mixxx.org/) open-source DJ software through natural language.
-Search your library, cue tracks, set loops, manage effects, and mix — all from your AI assistant.
+**Mixx-DJ-MCP** is a [FastMCP](https://github.com/jlowin/fastmcp) server that bridges AI coding assistants to [Mixxx](https://mixxx.org/) — the leading open-source DJ software — via its built-in [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) surface. No plugins, no patches, no hardware modifications. Point your AI at it and start mixing.
 
 ```
-User ──→ AI IDE (Claude/Cursor/opencode) ──→ mixx-dj-mcp (FastMCP) ──→ OSC Bridge ──→ Mixxx
-                                                                                           │
-                                                                                     ┌─────┴─────┐
-                                                                                     │  4 Decks   │
-                                                                                     │  Mixer     │
-                                                                                     │  Effects   │
-                                                                                     │  Library   │
-                                                                                     └────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Claude / Cursor / opencode                                     │
+│  "Load the last Daft Punk track to deck 2, sync it, apply reverb"│
+└───────────────────────────┬──────────────────────────────────────┘
+                            │ MCP stdin/stdout or HTTP
+┌───────────────────────────▼──────────────────────────────────────┐
+│                    mixx-dj-mcp (FastMCP 3.4+)                     │
+│                                                                   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+│  │   Deck   │ │ Library  │ │ Effects  │ │  Mixer  │ │ Crate  │ │
+│  │  (19 ops)│ │  (8 ops) │ │  (7 ops) │ │ (8 ops) │ │(5 ops) │ │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └───┬────┘ │
+│  ┌────┴────┐ ┌─────┴─────┐ ┌────┴────┐ ┌─────┴─────┐ ┌───┴────┐ │
+│  │ Stems  │ │    Set    │ │  Skin   │ │   Vinyl   │ │Controller││
+│  │(6 ops) │ │  (2 ops)  │ │ (7 ops) │ │  (5 ops)  │ │ (5 ops) │ │
+│  └────┬────┘ └─────┬─────┘ └────┬────┘ └─────┬─────┘ └───┬────┘ │
+│       │            │             │             │           │      │
+│  ┌────▼────────────▼─────────────▼─────────────▼───────────▼──┐  │
+│  │               OSC Bridge (python-osc UDP)                   │  │
+│  └─────────────────────────────┬───────────────────────────────┘  │
+└────────────────────────────────┼──────────────────────────────────┘
+                                 │ OSC port 11119 (commands → Mixxx)
+                                 │ OSC port 11118 (status ← Mixxx)
+                    ┌────────────▼────────────┐
+                    │    Mixxx 2.5+           │
+                    │  ┌──────┐ ┌──────┐     │
+                    │  │Deck 1│ │Deck 2│ ...  │
+                    │  │Deck 3│ │Deck 4│     │
+                    │  └──────┘ └──────┘     │
+                    │  Mixer · Effects · Lib  │
+                    └─────────────────────────┘
 ```
 
 ## Features
