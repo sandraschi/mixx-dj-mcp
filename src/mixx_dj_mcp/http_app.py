@@ -38,8 +38,8 @@ def create_app(config: MixxConfig) -> FastAPI:
 
 def mount_mcp(app: FastAPI, mcp: FastMCP, config: MixxConfig) -> None:
     try:
-        mcp_app = mcp.sse_app()
+        mcp_app = mcp.http_app()
         app.mount("/mcp", mcp_app)
-    except (AttributeError, TypeError, Exception) as e:
+    except Exception as e:
         import sys
-        print(f"MCP SSE mount skipped: {e}", file=sys.stderr)
+        print(f"MCP mount skipped: {e}", file=sys.stderr)

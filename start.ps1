@@ -58,7 +58,7 @@ if (-not $Headless -and -not $BackendOnly) {
     $webRoot = Join-Path $ScriptRoot "web_sota"
     if (Test-Path "$webRoot\package.json") {
         Write-Host "-> Starting frontend on port $FrontendPort..." -ForegroundColor Yellow
-        $FrontendProc = Start-Process -NoNewWindow -PassThru -FilePath "bun" -ArgumentList @(
+        $FrontendProc = Start-Process -NoNewWindow -PassThru -FilePath "C:\Users\sandr\.bun\bin\bun.exe" -ArgumentList @(
             "run", "dev",
             "--port", "$FrontendPort",
             "--host"
