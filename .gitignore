@@ -73,3 +73,5 @@ web_sota/vite.config.js
 data/
 *.db
 *.sqlite3
+
+*.egg-info/
