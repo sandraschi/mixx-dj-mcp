@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -152,8 +153,8 @@ async def _ensure_music_model():
     if _music_model is not None:
         return _music_model
     try:
-        from transformers import AutoProcessor, MusicGenForConditionalGeneration
         import torch
+        from transformers import AutoProcessor, MusicGenForConditionalGeneration
         processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
         model = MusicGenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -181,7 +182,8 @@ async def music_generate(body: dict):
         project = os.environ.get("GOOGLE_CLOUD_PROJECT")
         if project:
             client = genai.Client(vertexai=True, project=project, location="global")
-            import tempfile, os as _os
+            import os as _os
+            import tempfile
             out_dir = tempfile.mkdtemp()
             out_path = _os.path.join(out_dir, "lyria.wav")
             response = client.models.generate_content(
@@ -204,7 +206,10 @@ async def music_generate(body: dict):
     if result:
         try:
             processor, model, device = result
-            import torch, scipy.io.wavfile, tempfile, os as _os
+            import os as _os
+            import tempfile
+
+            import scipy.io.wavfile
             inputs = processor(text=[prompt], padding=True, return_tensors="pt").to(device)
             audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3.0, max_new_tokens=int(duration * 50))
             out_dir = tempfile.mkdtemp()

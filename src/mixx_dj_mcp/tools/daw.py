@@ -1,11 +1,11 @@
 """DAW cross-connection — export stems/sessions to Reaper, Fairlight, Resolume, or disk."""
-from typing import Any, Literal
-from pathlib import Path
-import os
 import json
-import httpx
+import os
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Literal
 
+import httpx
 from fastmcp import FastMCP
 from rich.console import Console
 
@@ -171,22 +171,23 @@ def register_daw_tools(mcp: FastMCP):
 
             elif operation == "resolume_sync":
                 """Send deck BPM and beat state to Resolume via OSC."""
-                bpm = bridge.get_state("bpm", deck, 128.0)
-                playing = bridge.get_state("play", deck, 0.0)
-                volume = bridge.get_state("volume", deck, 0.8)
+                br = get_bridge()
+                d = deck_a
+                bpm = br.get_state("bpm", d, 128.0)
+                playing = br.get_state("play", d, 0.0)
+                volume = br.get_state("volume", d, 0.8)
 
                 try:
                     from pythonosc import udp_client
                     client = udp_client.SimpleUDPClient("127.0.0.1", 7000)
-                    # Resolume OSC address space
                     client.send_message("/composition/tempo", float(bpm))
                     client.send_message("/composition/bpm", float(bpm))
-                    client.send_message(f"/deck/{deck}/playing", 1.0 if playing else 0.0)
-                    client.send_message(f"/deck/{deck}/volume", float(volume))
+                    client.send_message(f"/deck/{d}/playing", 1.0 if playing else 0.0)
+                    client.send_message(f"/deck/{d}/volume", float(volume))
                     return {
                         "success": True,
                         "message": f"Sent BPM {bpm} to Resolume on port 7000",
-                        "data": {"bpm": bpm, "playing": bool(playing), "deck": deck},
+                        "data": {"bpm": bpm, "playing": bool(playing), "deck": d},
                     }
                 except ImportError:
                     return {"success": False, "message": "python-osc not installed", "data": {}}

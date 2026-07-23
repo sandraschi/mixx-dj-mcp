@@ -3,6 +3,7 @@
 
 def register_all_tools(mcp):
     from .controller import register_controller_tools
+    from .daw import register_daw_tools
     from .deck_control import register_deck_tools
     from .effects import register_effects_tools
     from .library import register_library_tools
@@ -13,7 +14,6 @@ def register_all_tools(mcp):
     from .smart_crate import register_crate_tools
     from .stems import register_stems_tools
     from .transitions import register_transition_tools
-    from .daw import register_daw_tools
     from .vinyl import register_vinyl_tools
 
     register_deck_tools(mcp)
