@@ -15,6 +15,10 @@ def register_all_tools(mcp):
     from .stems import register_stems_tools
     from .transitions import register_transition_tools
     from .vinyl import register_vinyl_tools
+    from .analyzer import register_analyzer_tools
+    from .recording import register_recording_tools
+    from .history import register_history_tools
+    from .ai_dj import register_ai_tools
 
     register_deck_tools(mcp)
     register_controller_tools(mcp)
@@ -29,3 +33,7 @@ def register_all_tools(mcp):
     register_stems_tools(mcp)
     register_transition_tools(mcp)
     register_vinyl_tools(mcp)
+    register_analyzer_tools(mcp)
+    register_recording_tools(mcp)
+    register_history_tools(mcp)
+    register_ai_tools(mcp)

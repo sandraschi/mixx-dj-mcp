@@ -115,6 +115,32 @@ export function fetchLLMDiscover(): Promise<LLMDiscoverResponse> {
   return apiGet<LLMDiscoverResponse>("/api/llm/discover");
 }
 
+export interface NowPlayingDeck {
+  id: number;
+  playing: boolean;
+  bpm: number;
+  key: string;
+  track_title: string;
+  track_artist: string;
+  volume: number;
+  sync_enabled: boolean;
+}
+
+export interface NowPlayingResponse {
+  decks: NowPlayingDeck[];
+  crossfader: number;
+  recording: { name: string; events: number } | null;
+  external_sources: string[];
+}
+
+export function fetchNowPlaying(): Promise<NowPlayingResponse> {
+  return apiGet<NowPlayingResponse>("/api/v1/cockpit/now_playing");
+}
+
+export function fetchFleetSources(): Promise<{ sources: Record<string, unknown> }> {
+  return apiGet<{ sources: Record<string, unknown> }>("/api/v1/fleet/sources");
+}
+
 export function fetchSkills(): Promise<string[]> {
   return apiGet<string[]>("/api/skills");
 }

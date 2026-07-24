@@ -480,4 +480,76 @@ def main():
     console.print(f"[green]{config.mcp_name} stopped[/green]")
 
 
+# --- Fleet Audio Hub: Cross-MCP Deck Handoff ---
+_audio_sources: dict[str, dict] = {}
+
+
+@fastapi_app.get("/api/v1/fleet/sources")
+async def fleet_sources():
+    """List registered external audio sources (songgen, sfx, stems, plex, etc.)."""
+    return {"sources": _audio_sources}
+
+
+@fastapi_app.post("/api/v1/fleet/register")
+async def fleet_register(body: dict):
+    """Register an external audio source for deck handoff."""
+    name = body.get("name", "unknown")
+    _audio_sources[name] = {
+        "name": name,
+        "base_url": body.get("base_url", ""),
+        "capabilities": body.get("capabilities", []),
+        "registered_at": __import__("time").time(),
+        "status": "online",
+    }
+    return {"success": True, "source": name}
+
+
+@fastapi_app.get("/api/v1/cockpit/now_playing")
+async def cockpit_now_playing():
+    """Aggregated 'what's happening' across all decks and connected sources."""
+    bridge = get_osc_bridge()
+    decks = []
+    for d in range(1, 5):
+        decks.append(
+            {
+                "id": d,
+                "playing": bool(bridge.get_state("play", d, 0.0)),
+                "bpm": bridge.get_state("bpm", d, 0.0),
+                "key": bridge.get_state("key", d, ""),
+                "track_title": bridge.get_state("track_title", d, "No Track"),
+                "track_artist": bridge.get_state("track_artist", d, ""),
+                "volume": bridge.get_state("volume", d, 0.8),
+                "sync_enabled": bool(bridge.get_state("sync_enabled", d, 0.0)),
+            }
+        )
+    recording = None
+    try:
+        from .tools.recording import _active_recording
+
+        if _active_recording:
+            recording = {"name": _active_recording["name"], "events": _active_recording["events"]}
+    except Exception:
+        pass
+    return {
+        "decks": decks,
+        "crossfader": bridge.get_global_state("crossfader", 0.0),
+        "recording": recording,
+        "external_sources": list(_audio_sources.keys()),
+    }
+
+
+# --- Voice Control Webhook ---
+@fastapi_app.post("/api/voice/command")
+async def voice_command(body: dict):
+    """Webhook for speech-mcp voice commands."""
+    text = body.get("text", "")
+    if not text:
+        return {"success": False, "error": "No text provided"}
+    result = await _try_execute_command(text)
+    if result:
+        result["source"] = "voice"
+        return result
+    return {"success": False, "message": f"Voice command not recognized: {text}", "source": "voice"}
+
+
 __all__ = ["app", "main", "mcp"]

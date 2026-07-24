@@ -2,76 +2,35 @@
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "id": "mixx-dj-mcp",
   "name": "Mixx-DJ-MCP",
-  "description": "Control Mixxx open-source DJ software through natural language. Search your library, cue tracks, set loops, apply effects, and mix — all from your AI assistant.",
-  "short_description": "AI-powered Mixxx DJ controller",
+  "description": "Control Mixxx open-source DJ software through natural language. Full deck control, library management, effects, mixer, AI transitions, stem separation, vinyl control, audio analysis, set recording, DJ analytics, and autonomous AI mixing.",
+  "short_description": "AI-powered Mixxx DJ controller with autonomous mixing",
   "icon": "https://raw.githubusercontent.com/sandraschi/mixx-dj-mcp/main/assets/icon.png",
   "author": "sandraschi",
   "homepage": "https://github.com/sandraschi/mixx-dj-mcp",
   "repository": "https://github.com/sandraschi/mixx-dj-mcp",
   "license": "MIT",
   "categories": ["media", "music", "automation"],
-  "tags": ["mixxx", "dj", "osc", "audio", "live-mixing", "deck", "effects", "stems", "transitions", "vinyl"],
+  "tags": ["mixxx", "dj", "osc", "audio", "live-mixing", "deck", "effects", "stems", "transitions", "vinyl", "ai-dj", "audio-analysis", "voice-control"],
   "requirements": ["Mixxx 2.5+ with OSC enabled", "Python 3.12+", "bun for webapp"],
   "tools": [
-    {
-      "name": "mixx_deck",
-      "description": "Full deck control: play, stop, cue, loop, sync, hot cues, scratch, seek, beatjump, beatloop, rate, pregain, filter high/mid/low, quantize, keylock, load track, eject"
-    },
-    {
-      "name": "mixx_library",
-      "description": "Library search, crate/playlist browse, track info, filter by BPM/genre/key"
-    },
-    {
-      "name": "mixx_effects",
-      "description": "Effect chain management, enable/disable effects, parameter control, quick effect presets"
-    },
-    {
-      "name": "mixx_mixer",
-      "description": "Crossfader, per-channel EQ (high/mid/low), gain, volume, headphone cue, talkover, orientation, balance"
-    },
-    {
-      "name": "mixx_stems",
-      "description": "Stem separation via Demucs, sampler loading, stem-aware mixing, mute/volume control"
-    },
-    {
-      "name": "mixx_transition",
-      "description": "AI-powered transitions between decks: suggest, apply (echo/filter/hard-cut/spin-back/flanger/reverb/blend), auto-crossfader"
-    },
-    {
-      "name": "mixx_vinyl",
-      "description": "Vinyl control calibration, scratch mode, deck mode switching"
-    },
-    {
-      "name": "mixx_crate",
-      "description": "LLM-generated smart crates based on BPM, key, genre and energy analysis"
-    },
-    {
-      "name": "mixx_skin",
-      "description": "Skin management: list, apply, preview Mixxx skins"
-    },
-    {
-      "name": "mixx_controller",
-      "description": "USB controller auto-detection and mapping management"
-    },
-    {
-      "name": "mixx_daw",
-      "description": "DAW export: render stems, mixdown, cue points to Ableton/Reaper format"
-    },
-    {
-      "name": "mixx_set",
-      "description": "AI set sequencer: plan BPM progression, energy curve, genre flow for a mix set"
-    },
-    {
-      "name": "show_deck_status_card",
-      "description": "Prefab UI card showing live deck status (play state, BPM, key, gain, volume, sync, loop)"
-    },
-    {
-      "name": "show_mixer_status_card",
-      "description": "Prefab UI card showing mixer state (crossfader, per-deck levels)"
-    },
-    {
-      "name": "show_library_status_card",
-      "description": "Prefab UI card showing library connection and search status"
-    }
+    {"name": "mixx_deck", "description": "Full deck control: play, stop, cue, loop, sync, hot cues, scratch, seek, beatjump, beatloop, rate, pregain, filter high/mid/low, quantize, keylock, load track, eject, video"},
+    {"name": "mixx_library", "description": "Library search, crate/playlist browse, track info, filter by BPM/genre/key"},
+    {"name": "mixx_effects", "description": "Effect chain management, enable/disable effects, parameter control, quick effect presets"},
+    {"name": "mixx_mixer", "description": "Crossfader, per-channel EQ (high/mid/low), gain, volume, headphone cue, talkover, mic"},
+    {"name": "mixx_stems", "description": "Stem separation via Demucs, sampler loading, stem-aware mixing"},
+    {"name": "mixx_transition", "description": "AI-powered transitions between decks: suggest, apply, auto-crossfader"},
+    {"name": "mixx_vinyl", "description": "Vinyl control calibration, scratch, deck mode switching"},
+    {"name": "mixx_crate", "description": "LLM-generated smart crates by BPM, key, genre, energy"},
+    {"name": "mixx_skin", "description": "Skin management: list, apply, preview Mixxx skins"},
+    {"name": "mixx_controller", "description": "USB controller auto-detection and mapping"},
+    {"name": "mixx_daw", "description": "DAW export: render stems, mixdown, cue points"},
+    {"name": "mixx_set", "description": "AI set sequencer: plan BPM progression and energy curve"},
+    {"name": "mixx_analyze", "description": "Audio analysis via librosa: BPM, key (Krumhansl-Schmuckler), energy, cue points"},
+    {"name": "mixx_recording", "description": "Record, replay, and export DJ sets as OSC command streams"},
+    {"name": "mixx_history", "description": "DJ analytics: play history, transition log, style profile, track suggestions"},
+    {"name": "mixx_ai_set", "description": "AI Autonomous Mix Agent: plan sets, suggest next track, perform transitions, review"},
+    {"name": "show_deck_status_card", "description": "Prefab UI card with live deck KPIs"},
+    {"name": "show_mixer_status_card", "description": "Prefab UI card with mixer status"},
+    {"name": "show_library_status_card", "description": "Prefab UI card with library status"}
   ]
 }
