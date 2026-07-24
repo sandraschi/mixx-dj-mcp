@@ -49,7 +49,11 @@ foreach ($dir in $frontendDirs) {
 
         # TypeScript lint gate
         Write-Host "  tsc --noEmit..." -ForegroundColor Gray
-        $tscOut = npx tsc --noEmit 2>&1
+        if ($pm -eq "bun") {
+            $tscOut = bun x tsc --noEmit 2>&1
+        } else {
+            $tscOut = npx tsc --noEmit 2>&1
+        }
         $tscExit = $LASTEXITCODE
         if ($tscExit -ne 0) {
             Write-Host "  TypeScript compilation FAILED - fix errors before building NSIS" -ForegroundColor Red

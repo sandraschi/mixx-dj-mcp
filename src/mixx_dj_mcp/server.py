@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sys
@@ -14,6 +15,8 @@ from rich.console import Console
 from .bridge.osc_bridge import OscBridge
 from .config import MixxConfig
 from .http_app import create_app, mount_mcp
+
+logger = logging.getLogger(__name__)
 
 
 class DeckLoadRequest(BaseModel):
@@ -103,21 +106,21 @@ async def health_check():
 @fastapi_app.get("/api/v1/diagnostics")
 async def diagnostics():
     get_osc_bridge()
+    try:
+        tool_names = (
+            sorted(mcp._tool_manager._tools.keys())
+            if hasattr(mcp, "_tool_manager") and hasattr(mcp._tool_manager, "_tools")
+            else []
+        )
+    except Exception:
+        tool_names = []
     return {
         "status": "ok",
         "server": config.mcp_name,
         "version": "0.1.0",
         "uptime_seconds": get_uptime(),
-        "tool_count": get_tool_count(),
-        "tools": [
-            {"name": "mixx_deck"},
-            {"name": "mixx_library"},
-            {"name": "mixx_effects"},
-            {"name": "mixx_mixer"},
-            {"name": "show_deck_status_card"},
-            {"name": "show_mixer_status_card"},
-            {"name": "show_library_status_card"},
-        ],
+        "tool_count": len(tool_names),
+        "tools": [{"name": t} for t in tool_names],
         "system": {"windows": True},
         "errors": [],
     }
@@ -148,6 +151,7 @@ async def deck_status():
 # Music generation — lazy-loaded MusicGen via HuggingFace
 _music_model = None
 
+
 async def _ensure_music_model():
     global _music_model
     if _music_model is not None:
@@ -155,6 +159,7 @@ async def _ensure_music_model():
     try:
         import torch
         from transformers import AutoProcessor, MusicGenForConditionalGeneration
+
         processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
         model = MusicGenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -179,11 +184,13 @@ async def music_generate(body: dict):
     try:
         from google import genai
         from google.genai import types
+
         project = os.environ.get("GOOGLE_CLOUD_PROJECT")
         if project:
             client = genai.Client(vertexai=True, project=project, location="global")
             import os as _os
             import tempfile
+
             out_dir = tempfile.mkdtemp()
             out_path = _os.path.join(out_dir, "lyria.wav")
             response = client.models.generate_content(
@@ -197,7 +204,14 @@ async def music_generate(body: dict):
             if response.candidates and response.candidates[0].audio:
                 with open(out_path, "wb") as f:
                     f.write(response.candidates[0].audio.data)
-                return {"success": True, "file": out_path, "duration": duration, "prompt": prompt, "model": "lyria-3-pro-preview", "backend": "lyria"}
+                return {
+                    "success": True,
+                    "file": out_path,
+                    "duration": duration,
+                    "prompt": prompt,
+                    "model": "lyria-3-pro-preview",
+                    "backend": "lyria",
+                }
     except Exception as e:
         console.print(f"[yellow]Lyria failed: {e}[/yellow]")
 
@@ -210,21 +224,33 @@ async def music_generate(body: dict):
             import tempfile
 
             import scipy.io.wavfile
+
             inputs = processor(text=[prompt], padding=True, return_tensors="pt").to(device)
-            audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3.0, max_new_tokens=int(duration * 50))
+            audio_values = model.generate(
+                **inputs, do_sample=True, guidance_scale=3.0, max_new_tokens=int(duration * 50)
+            )
             out_dir = tempfile.mkdtemp()
             out_path = _os.path.join(out_dir, "generated.wav")
             sampling_rate = model.config.audio_encoder.sampling_rate
             scipy.io.wavfile.write(out_path, rate=sampling_rate, data=audio_values[0, 0].cpu().numpy())
-            return {"success": True, "file": out_path, "duration": duration, "prompt": prompt, "model": "musicgen-small", "backend": "musicgen"}
+            return {
+                "success": True,
+                "file": out_path,
+                "duration": duration,
+                "prompt": prompt,
+                "model": "musicgen-small",
+                "backend": "musicgen",
+            }
         except Exception as e:
             console.print(f"[yellow]MusicGen failed: {e}[/yellow]")
 
     # Backend 3: songgeneration-mcp (cloud Studio API)
     try:
         import httpx
-        r = await httpx.AsyncClient(timeout=120).post("http://127.0.0.1:10885/api/v1/generate",
-            json={"prompt": prompt, "duration": duration})
+
+        r = await httpx.AsyncClient(timeout=120).post(
+            "http://127.0.0.1:10885/api/v1/generate", json={"prompt": prompt, "duration": duration}
+        )
         if r.status_code == 200:
             data = r.json()
             data["backend"] = "songgen-studio"
@@ -232,28 +258,38 @@ async def music_generate(body: dict):
     except Exception as e:
         console.print(f"[yellow]songgeneration-mcp failed: {e}[/yellow]")
 
-    return {"error": "All music generation backends failed. Try: uv add transformers torch scipy (MusicGen) or set GOOGLE_CLOUD_PROJECT (Lyria)"}
+    return {
+        "error": "All music generation backends failed. Try: uv add transformers torch scipy (MusicGen) or set GOOGLE_CLOUD_PROJECT (Lyria)"
+    }
 
 
 @fastapi_app.get("/api/llm/discover")
 async def llm_discover():
-    """Detect local LLM provider."""
-    try:
-        async with httpx.AsyncClient(timeout=3) as client:
-            r = await client.get("http://localhost:11434/api/tags")
-            if r.status_code == 200:
-                models = r.json().get("models", [])
-                return {"provider": "ollama", "host": "localhost:11434", "status": "online", "models": [m["name"] for m in models]}
-    except Exception:
-        pass
-    try:
-        async with httpx.AsyncClient(timeout=3) as client:
-            r = await client.get("http://localhost:1234/api/v1/models")
-            if r.status_code == 200:
-                return {"provider": "lmstudio", "host": "localhost:1234", "status": "online", "models": []}
-    except Exception:
-        pass
-    return {"provider": "none", "status": "offline", "models": []}
+    """Detect local LLM provider(s)."""
+    providers = []
+
+    async def _probe(name: str, port: int, probe_path: str, model_path: str | None = None):
+        try:
+            async with httpx.AsyncClient(timeout=3) as client:
+                r = await client.get(f"http://localhost:{port}{probe_path}")
+                if r.status_code == 200:
+                    models = []
+                    if model_path:
+                        raw = r.json()
+                        for key in model_path.split("."):
+                            raw = raw.get(key, []) if isinstance(raw, dict) else []
+                        models = [m.get("name") or m.get("id") or "" for m in raw if isinstance(m, dict)]
+                    providers.append({"name": name, "port": port, "status": "detected", "models": models})
+                    return
+        except Exception:
+            logger.debug("%s probe failed on port %d", name, port)
+        providers.append({"name": name, "port": port, "status": "not_found", "models": []})
+
+    await _probe("ollama", 11434, "/api/tags", "models")
+    await _probe("lmstudio", 1234, "/v1/models", "data")
+    await _probe("vllm", 8000, "/v1/models", "data")
+
+    return {"providers": providers}
 
 
 @fastapi_app.get("/api/v1/fork")
@@ -323,8 +359,10 @@ async def _try_execute_command(msg: str) -> dict | None:
     deck_match = re.search(r"deck\s*(\d)", msg_lower)
     deck = int(deck_match.group(1)) if deck_match else 1
 
-    if ("load" in msg_lower and ("track" in msg_lower or "song" in msg_lower)):
-        return {"message": "Use the Library page to search and click 'Load to N' to send the track path via the REST API."}
+    if "load" in msg_lower and ("track" in msg_lower or "song" in msg_lower):
+        return {
+            "message": "Use the Library page to search and click 'Load to N' to send the track path via the REST API."
+        }
 
     if "play" in msg_lower and "pause" not in msg_lower:
         bridge.send(f"/deck/{deck}/play", 1.0)
@@ -337,9 +375,7 @@ async def _try_execute_command(msg: str) -> dict | None:
         return {"message": f"Sync enabled on deck {deck}.", "executed": True, "deck": deck}
 
     if "crossfader" in msg_lower or "fade" in msg_lower:
-        val = 0.0
-        if "left" in msg_lower: val = -1.0
-        elif "right" in msg_lower: val = 1.0
+        val = -1.0 if "left" in msg_lower else (1.0 if "right" in msg_lower else 0.0)
         bridge.send("/crossfader", val)
         return {"message": f"Crossfader set to {val}.", "executed": True}
 
@@ -357,9 +393,9 @@ async def _try_execute_command(msg: str) -> dict | None:
             w = word.replace("%", "").replace("pct", "")
             try:
                 pct = float(w)
-                if pct > 1: val = pct / 100
-                else: val = pct
-            except: pass
+                val = pct / 100 if pct > 1 else pct
+            except Exception:
+                pass
         bridge.send(f"/deck/{deck}/volume", min(1.0, max(0.0, val)))
         return {"message": f"Deck {deck} volume set to {val:.0%}.", "executed": True, "deck": deck, "volume": val}
 
@@ -381,19 +417,24 @@ async def llm_chat(body: dict):
     # Try local Ollama with requested model
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.post("http://localhost:11434/api/chat", json={
-                "model": model,
-                "messages": messages,
-                "stream": False,
-            })
+            r = await client.post(
+                "http://localhost:11434/api/chat",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "stream": False,
+                },
+            )
             if r.status_code == 200:
                 reply = r.json().get("message", {}).get("content", "")
                 return {"message": reply}
     except Exception:
-        pass
+        logger.debug("Ollama chat failed")
 
     # Ollama failed — not a command, not an LLM request
-    return {"message": "Not recognized as a DJ command and no LLM available. Try: 'play deck 1', 'sync deck 2', 'crossfader left', 'load track to deck 1' from Library."}
+    return {
+        "message": "Not recognized as a DJ command and no LLM available. Try: 'play deck 1', 'sync deck 2', 'crossfader left', 'load track to deck 1' from Library."
+    }
 
 
 @fastapi_app.post("/api/v1/deck/{deck_id}/cue")
@@ -434,8 +475,8 @@ def main():
 
     try:
         bridge.stop()
-    except Exception:
-        pass
+    except Exception as e:
+        console.print(f"[yellow]OSC bridge stop warning: {e}[/yellow]")
     console.print(f"[green]{config.mcp_name} stopped[/green]")
 
 

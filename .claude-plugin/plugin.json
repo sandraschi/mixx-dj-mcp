@@ -1,0 +1,6 @@
+{
+  "name": "mixx-dj-mcp",
+  "version": "0.1.0",
+  "description": "Control Mixxx open-source DJ software through natural language via OSC.",
+  "hooks": "../hooks/hooks.json"
+}

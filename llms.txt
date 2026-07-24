@@ -10,14 +10,21 @@ Search your library, cue tracks, set loops, apply effects, and mix — all from 
 | File | Purpose |
 |------|---------|
 | `src/mixx_dj_mcp/server.py` | FastMCP app, lifespan, tool registration |
-| `src/mixx_dj_mcp/osc/bridge.py` | OSC UDP client to Mixxx (ports 11118/11119) |
-| `src/mixx_dj_mcp/osc/addresses.py` | OSC address constants for all Mixxx controls |
-| `src/mixx_dj_mcp/tools/deck.py` | `mixx_deck` portmanteau — transport, cues, loops, sync |
+| `src/mixx_dj_mcp/bridge/osc_bridge.py` | OSC UDP client to Mixxx (ports 11118/11119) |
+| `src/mixx_dj_mcp/bridge/protocol.py` | OSC address constants for all Mixxx controls |
+| `src/mixx_dj_mcp/tools/deck_control.py` | `mixx_deck` portmanteau — transport, cues, loops, sync |
 | `src/mixx_dj_mcp/tools/library.py` | `mixx_library` portmanteau — search, browse, metadata |
 | `src/mixx_dj_mcp/tools/effects.py` | `mixx_effects` portmanteau — chains, parameters |
 | `src/mixx_dj_mcp/tools/mixer.py` | `mixx_mixer` portmanteau — crossfader, EQ, gain |
+| `src/mixx_dj_mcp/tools/stems.py` | `mixx_stems` portmanteau — stem separation |
+| `src/mixx_dj_mcp/tools/transitions.py` | `mixx_transition` portmanteau — AI transitions |
+| `src/mixx_dj_mcp/tools/vinyl.py` | `mixx_vinyl` portmanteau — vinyl control |
+| `src/mixx_dj_mcp/tools/controller.py` | `mixx_controller` — USB auto-detect |
+| `src/mixx_dj_mcp/tools/daw.py` | `mixx_daw` — DAW export |
+| `src/mixx_dj_mcp/tools/skin_manager.py` | `mixx_skin` — skin management |
+| `src/mixx_dj_mcp/tools/smart_crate.py` | `mixx_crate` — LLM crate creation |
+| `src/mixx_dj_mcp/tools/set_sequencer.py` | `mixx_set` — AI set sequencing |
 | `src/mixx_dj_mcp/config.py` | Environment-based configuration |
-| `src/mixx_dj_mcp/models/schemas.py` | Pydantic models for tool I/O |
 | `bridge/README.md` | Mixxx OSC configuration and address reference |
 | `start.ps1` | SOTA startup script |
 | `web_sota/` | React/Vite/Bun webapp dashboard |

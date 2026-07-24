@@ -326,8 +326,7 @@ def register_sequencer_tools(mcp: FastMCP):
                     return {
                         "success": True,
                         "message": (
-                            "Mix analysis coming soon: will detect transitions, "
-                            "BPM consistency, phrase alignment"
+                            "Mix analysis coming soon: will detect transitions, BPM consistency, phrase alignment"
                         ),
                         "data": {},
                     }

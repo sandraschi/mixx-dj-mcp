@@ -1,78 +1,67 @@
 {
   "manifest_version": "0.2",
-  "id": "mixx-dj-mcp",
-  "name": "Mixx-DJ-MCP",
+  "name": "mixx-dj-mcp",
   "version": "0.1.0",
   "description": "Control Mixxx DJ software via natural language. Search library, control decks, apply effects, manage transitions.",
   "author": {
     "name": "Sandra",
     "email": "sandra@sandraschi.dev"
   },
+  "server": {
+    "type": "python",
+    "entry_point": "../run_server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "mixx_dj_mcp"],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  },
+  "user_config": {
+    "MIXX_HOST": {
+      "type": "string",
+      "description": "IP address of the machine running Mixxx",
+      "title": "Mixxx OSC Host",
+      "required": false,
+      "default": "127.0.0.1"
+    },
+    "MIXX_OSC_OUT_PORT": {
+      "type": "string",
+      "description": "Port Mixxx sends OSC messages from",
+      "title": "Mixxx OSC Output Port",
+      "required": false,
+      "default": "11118"
+    },
+    "MIXX_OSC_IN_PORT": {
+      "type": "string",
+      "description": "Port Mixxx receives OSC messages on",
+      "title": "Mixxx OSC Input Port",
+      "required": false,
+      "default": "11119"
+    }
+  },
+  "tools": [
+    {"name": "mixx_deck", "description": "Deck playback: play, pause, stop, cue, seek, load, sync, rate, loop, video"},
+    {"name": "mixx_mixer", "description": "Crossfader, EQ bands, gain, headphone cues, and volume controls"},
+    {"name": "mixx_effects", "description": "Effect unit management: chain load, parameter set, enable/disable, super combo"},
+    {"name": "mixx_library", "description": "Track search, browse, filtering by BPM, key, genre, artist, crate management"},
+    {"name": "mixx_stems", "description": "Stem separation via Demucs, sampler loading, stem-aware transitions"},
+    {"name": "mixx_transition", "description": "AI-powered DJ transitions: suggest, apply, auto-crossfader"},
+    {"name": "mixx_vinyl", "description": "Vinyl control calibration, scratch, and deck mode switching"},
+    {"name": "mixx_controller", "description": "USB DJ controller auto-detection and mapping"},
+    {"name": "mixx_daw", "description": "DAW export: render stems, mixdown, cue points"},
+    {"name": "mixx_skin", "description": "Mixxx skin management: list, apply, preview"},
+    {"name": "mixx_crate", "description": "AI-generated smart crates by BPM, key, genre, energy"},
+    {"name": "mixx_set", "description": "AI set sequencer: plan BPM progression and energy curve"},
+    {"name": "show_deck_status_card", "description": "Rich Prefab UI card with live deck KPIs"},
+    {"name": "show_mixer_status_card", "description": "Rich Prefab UI card with mixer status"},
+    {"name": "show_library_status_card", "description": "Rich Prefab UI card with library status"}
+  ],
   "license": "MIT",
-  "homepage": "https://github.com/sandraschi/mixx-dj-mcp",
   "repository": {
     "type": "git",
     "url": "https://github.com/sandraschi/mixx-dj-mcp"
   },
-  "categories": ["media", "music"],
-  "display_name": "Mixx DJ Control",
-  "icon": "assets/icon.png",
-  "entry": "src/run_server.py",
-  "server_type": "stdio",
-  "runtime": "python",
-  "env_prompts": [
-    {
-      "name": "MIXX_HOST",
-      "label": "Mixxx OSC Host",
-      "description": "IP address of the machine running Mixxx (default: 127.0.0.1)",
-      "default": "127.0.0.1",
-      "required": false
-    },
-    {
-      "name": "MIXX_OSC_OUT_PORT",
-      "label": "Mixxx OSC Output Port",
-      "description": "Port Mixxx sends OSC messages from (default: 8000)",
-      "default": "8000",
-      "required": false
-    },
-    {
-      "name": "MIXX_OSC_IN_PORT",
-      "label": "Mixxx OSC Input Port",
-      "description": "Port Mixxx receives OSC messages on (default: 9000)",
-      "default": "9000",
-      "required": false
-    }
-  ],
-  "prompts": [
-    {
-      "name": "system",
-      "description": "System prompt for Mixx DJ control",
-      "text": "You are Mixx-DJ-MCP, an expert DJ assistant controlling Mixxx open-source DJ software via the Open Sound Control (OSC) protocol. You have portmanteau tools for deck control, mixing, effects, library management, and recording."
-    },
-    {
-      "name": "user",
-      "description": "User guide for Mixx DJ operations",
-      "text": "Complete guide to DJing with Mixxx: beatmatching, effects, transitions, library management, and recording sessions."
-    }
-  ],
-  "tools": [
-    {"name": "mixx_deck", "description": "Deck playback: play, pause, stop, cue, seek, load, sync, rate, loop"},
-    {"name": "mixx_mixer", "description": "Crossfader, EQ bands, gain, headphone cues, and volume controls"},
-    {"name": "mixx_effects", "description": "Effect unit management: chain load, parameter set, enable/disable, super combo"},
-    {"name": "mixx_library", "description": "Track search, browse, filtering by BPM, key, genre, artist, crate management"},
-    {"name": "mixx_recording", "description": "Session recording controls: start, stop, save broadcast stream"},
-    {"name": "mixx_vinyl", "description": "Vinyl control calibration, scratch, and deck mode switching"}
-  ],
-  "keywords": [
-    "dj",
-    "mixxx",
-    "mixing",
-    "osc",
-    "automation",
-    "music",
-    "audio",
-    "mcp-server",
-    "fastmcp",
-    "model-context-protocol"
-  ]
+  "keywords": ["dj", "mixxx", "osc", "audio", "live-mixing", "mcp-server", "fastmcp"]
 }

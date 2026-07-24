@@ -5,9 +5,13 @@ import {
   Moon,
   Info,
   Package2,
+  Cpu,
 } from "lucide-react";
-import { API_BASE, fetchHealth } from "../lib/api";
+import { API_BASE, fetchHealth, fetchLLMDiscover, type LLMProvider } from "../lib/api";
 import { useStore } from "../lib/store";
+
+const LLM_PROVIDER_KEY = "mixx-llm-provider";
+const LLM_MODEL_KEY = "mixx-llm-model";
 
 export default function Settings() {
   const daniMode = useStore((s) => s.daniMode);
@@ -20,6 +24,12 @@ export default function Settings() {
     uptime_seconds: number;
   } | null>(null);
 
+  const [providers, setProviders] = useState<LLMProvider[]>([]);
+  const [providerStatus, setProviderStatus] = useState<Record<string, "probing" | "detected" | "not_found">>({});
+  const [selectedProvider, setSelectedProvider] = useState(() => localStorage.getItem(LLM_PROVIDER_KEY) || "");
+  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem(LLM_MODEL_KEY) || "");
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -29,9 +39,185 @@ export default function Settings() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      setProviderStatus({ ollama: "probing", lmstudio: "probing", vllm: "probing" });
+      try {
+        const data = await fetchLLMDiscover();
+        setProviders(data.providers);
+        const statuses: Record<string, "detected" | "not_found"> = {};
+        for (const p of data.providers) {
+          statuses[p.name] = p.status;
+        }
+        setProviderStatus(statuses);
+
+        const detected = data.providers.filter((p) => p.status === "detected");
+        if (detected.length > 0) {
+          const saved = localStorage.getItem(LLM_PROVIDER_KEY);
+          const match = detected.find((p) => p.name === saved);
+          const active = match || detected[0];
+          if (!match) {
+            localStorage.setItem(LLM_PROVIDER_KEY, active.name);
+          }
+          setSelectedProvider(active.name);
+          setAvailableModels(active.models);
+          const savedModel = localStorage.getItem(LLM_MODEL_KEY);
+          if (savedModel && active.models.includes(savedModel)) {
+            setSelectedModel(savedModel);
+          } else if (active.models.length > 0) {
+            setSelectedModel(active.models[0]);
+            localStorage.setItem(LLM_MODEL_KEY, active.models[0]);
+          }
+        }
+      } catch {
+        setProviderStatus({ ollama: "not_found", lmstudio: "not_found", vllm: "not_found" });
+      }
+    })();
+  }, []);
+
+  const handleProviderChange = (name: string) => {
+    setSelectedProvider(name);
+    localStorage.setItem(LLM_PROVIDER_KEY, name);
+    const p = providers.find((x) => x.name === name);
+    if (p) {
+      setAvailableModels(p.models);
+      if (p.models.length > 0) {
+        setSelectedModel(p.models[0]);
+        localStorage.setItem(LLM_MODEL_KEY, p.models[0]);
+      } else {
+        setSelectedModel("");
+      }
+    }
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    localStorage.setItem(LLM_MODEL_KEY, model);
+  };
+
+  const detectedCount = Object.values(providerStatus).filter((s) => s === "detected").length;
+  const hasAnyProvider = detectedCount > 0;
+
   return (
     <div data-testid="settings-page" className="space-y-6 max-w-2xl">
       <h2 className="text-xl font-semibold text-slate-100">Settings</h2>
+
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800">
+          <Cpu size={16} className="text-amber-400" />
+          <span className="text-sm font-medium text-slate-200">
+            Local LLM
+          </span>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs text-slate-500 block uppercase tracking-wider">
+              Provider Detection
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {["ollama", "lmstudio", "vllm"].map((name) => {
+                const status = providerStatus[name] || "probing";
+                const p = providers.find((x) => x.name === name);
+                return (
+                  <div
+                    key={name}
+                    data-testid={`llm-provider-${name}`}
+                    className={`rounded-lg border p-3 ${
+                      status === "detected"
+                        ? "border-emerald-700 bg-emerald-900/20"
+                        : status === "probing"
+                          ? "border-slate-700 bg-slate-800/30"
+                          : "border-slate-800 bg-slate-900/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          status === "detected"
+                            ? "bg-green-500"
+                            : status === "probing"
+                              ? "bg-yellow-500 animate-pulse"
+                              : "bg-slate-600"
+                        }`}
+                      />
+                      <span className="text-sm font-medium text-slate-200 capitalize">{name}</span>
+                      <span className="text-[10px] text-slate-500 ml-auto">:{p?.port ?? (name === "ollama" ? 11434 : name === "lmstudio" ? 1234 : 8000)}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      {status === "detected" ? "Detected" : status === "probing" ? "Probing..." : "Not found"}
+                    </p>
+                    {status === "detected" && p && (
+                      <p className="text-[10px] text-slate-500 mt-1">{p.models.length} model{p.models.length !== 1 ? "s" : ""}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {!hasAnyProvider && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <span className="text-amber-400 text-sm mt-0.5">!</span>
+              <p className="text-xs text-amber-300">
+                Install <strong>Ollama</strong> or <strong>LM Studio</strong> to enable AI features (chat, AI transitions, smart crates).
+              </p>
+            </div>
+          )}
+
+          {hasAnyProvider && (
+            <>
+              <div>
+                <label className="text-xs text-slate-500 block mb-1">
+                  Provider
+                </label>
+                <select
+                  data-testid="llm-provider-select"
+                  value={selectedProvider}
+                  onChange={(e) => handleProviderChange(e.target.value)}
+                  className="w-full bg-zinc-800 text-zinc-100 border border-zinc-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500/50"
+                >
+                  {providers
+                    .filter((p) => p.status === "detected")
+                    .map((p) => (
+                      <option key={p.name} value={p.name}>
+                        {p.name.charAt(0).toUpperCase() + p.name.slice(1)} (:{p.port})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-500 block mb-1">
+                  Model
+                </label>
+                {availableModels.length > 0 ? (
+                  <select
+                    data-testid="llm-model-select"
+                    value={selectedModel}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    className="w-full bg-zinc-800 text-zinc-100 border border-zinc-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500/50"
+                  >
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    data-testid="llm-model-input"
+                    value={selectedModel}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    placeholder="e.g. llama3.2:3b"
+                    className="w-full bg-zinc-800 text-zinc-100 border border-zinc-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500/50"
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800">

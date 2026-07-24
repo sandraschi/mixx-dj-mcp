@@ -1,4 +1,5 @@
 """DAW cross-connection — export stems/sessions to Reaper, Fairlight, Resolume, or disk."""
+
 import json
 import os
 from datetime import datetime
@@ -9,9 +10,9 @@ import httpx
 from fastmcp import FastMCP
 from rich.console import Console
 
-console = Console(file=__import__("sys").stderr)
-
 from ..bridge.osc_bridge import get_bridge
+
+console = Console(file=__import__("sys").stderr)
 
 DAVINCI_RESOLVE_API = os.getenv("DAVINCI_RESOLVE_API", "http://127.0.0.1:10843")
 REAPER_API = os.getenv("REAPER_API", "http://127.0.0.1:10797")
@@ -21,7 +22,15 @@ RESOLUME_API = os.getenv("RESOLUME_MCP_API", "http://127.0.0.1:0")  # MCP stdio 
 def register_daw_tools(mcp: FastMCP):
     @mcp.tool()
     async def mixx_daw(
-        operation: Literal["export_stems", "export_session", "send_to_fairlight", "send_to_reaper", "resolume_sync", "visuals_connect", "visuals_trigger"],
+        operation: Literal[
+            "export_stems",
+            "export_session",
+            "send_to_fairlight",
+            "send_to_reaper",
+            "resolume_sync",
+            "visuals_connect",
+            "visuals_trigger",
+        ],
         source_dir: str = "",
         output_dir: str = "",
         session_name: str = "",
@@ -66,6 +75,7 @@ def register_daw_tools(mcp: FastMCP):
                     for wav in src.rglob("*.wav"):
                         dest = out / wav.name
                         import shutil
+
                         shutil.copy2(str(wav), str(dest))
                         copied += 1
                     return {
@@ -119,7 +129,9 @@ def register_daw_tools(mcp: FastMCP):
                             if r.status_code == 200:
                                 imported.append(str(wav.name))
                             else:
-                                console.print(f"  [yellow]Fairlight import failed for {wav.name}: {r.status_code}[/yellow]")
+                                console.print(
+                                    f"  [yellow]Fairlight import failed for {wav.name}: {r.status_code}[/yellow]"
+                                )
                 except httpx.ConnectError:
                     return {
                         "success": False,
@@ -155,7 +167,9 @@ def register_daw_tools(mcp: FastMCP):
                             if r.status_code == 200:
                                 imported.append(str(wav.name))
                             else:
-                                console.print(f"  [yellow]Reaper import failed for {wav.name}: {r.status_code}[/yellow]")
+                                console.print(
+                                    f"  [yellow]Reaper import failed for {wav.name}: {r.status_code}[/yellow]"
+                                )
                 except httpx.ConnectError:
                     return {
                         "success": False,
@@ -179,6 +193,7 @@ def register_daw_tools(mcp: FastMCP):
 
                 try:
                     from pythonosc import udp_client
+
                     client = udp_client.SimpleUDPClient("127.0.0.1", 7000)
                     client.send_message("/composition/tempo", float(bpm))
                     client.send_message("/composition/bpm", float(bpm))
@@ -198,6 +213,7 @@ def register_daw_tools(mcp: FastMCP):
                 """Start continuous audio-reactive visual sync to Resolume."""
                 try:
                     from pythonosc import udp_client
+
                     client = udp_client.SimpleUDPClient("127.0.0.1", 7000)
 
                     bridge = get_bridge()
@@ -250,6 +266,7 @@ def register_daw_tools(mcp: FastMCP):
 
                 try:
                     from pythonosc import udp_client
+
                     client = udp_client.SimpleUDPClient("127.0.0.1", 7000)
 
                     intensity = max(0.0, min(1.0, intensity))

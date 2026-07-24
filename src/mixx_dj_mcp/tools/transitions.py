@@ -23,8 +23,8 @@ async def _llm_pick_transition(deck_a_info: dict, deck_b_info: dict, style: str)
     """Ask Ollama which transition fits the two tracks."""
     prompt = f"""You are an expert DJ choosing a transition between two tracks.
 
-Deck A: {deck_a_info['artist']} - {deck_a_info['title']} ({deck_a_info['bpm']} BPM, {deck_a_info['key']}, genre: {deck_a_info.get('genre', 'unknown')})
-Deck B: {deck_b_info['artist']} - {deck_b_info['title']} ({deck_b_info['bpm']} BPM, {deck_b_info['key']}, genre: {deck_b_info.get('genre', 'unknown')})
+Deck A: {deck_a_info["artist"]} - {deck_a_info["title"]} ({deck_a_info["bpm"]} BPM, {deck_a_info["key"]}, genre: {deck_a_info.get("genre", "unknown")})
+Deck B: {deck_b_info["artist"]} - {deck_b_info["title"]} ({deck_b_info["bpm"]} BPM, {deck_b_info["key"]}, genre: {deck_b_info.get("genre", "unknown")})
 
 Style requested: {style}
 
@@ -41,10 +41,16 @@ Available transitions:
 Respond with ONLY the transition name, nothing else."""
     try:
         import httpx
+
         async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.post("http://localhost:11434/api/generate", json={
-                "model": "llama3.2:3b", "prompt": prompt, "stream": False,
-            })
+            r = await client.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "llama3.2:3b",
+                    "prompt": prompt,
+                    "stream": False,
+                },
+            )
             if r.status_code == 200:
                 choice = r.json().get("response", "").strip()
                 if choice in TRANSITION_EFFECTS:

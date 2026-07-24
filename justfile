@@ -51,11 +51,10 @@ test:
 
 # Tauri Native
 
-# Build Tauri native desktop app (full pipeline: frontend + backend)
+# Build Tauri native desktop app (full pipeline: frontend + PyInstaller + NSIS)
 build-native:
     Set-Location '{{justfile_directory()}}\native'
-    $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
-    npx @tauri-apps/cli build
+    pwsh -NoLogo -File .\build.ps1
 
 # Run the CUA smoke test against the installed NSIS app
 cua-nsis-test:

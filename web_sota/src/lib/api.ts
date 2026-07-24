@@ -100,6 +100,21 @@ export function fetchLibraryQuery(
   return apiPost<LibrarySearchResponse>("/api/library/search", { query });
 }
 
+export interface LLMProvider {
+  name: string;
+  port: number;
+  status: "detected" | "not_found";
+  models: string[];
+}
+
+export interface LLMDiscoverResponse {
+  providers: LLMProvider[];
+}
+
+export function fetchLLMDiscover(): Promise<LLMDiscoverResponse> {
+  return apiGet<LLMDiscoverResponse>("/api/llm/discover");
+}
+
 export function fetchSkills(): Promise<string[]> {
   return apiGet<string[]>("/api/skills");
 }

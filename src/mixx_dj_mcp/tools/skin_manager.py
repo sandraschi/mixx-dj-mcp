@@ -200,6 +200,7 @@ def _update_skin_manifest(skin_path: Path, name: str, colors: dict):
 async def _parse_prompt_for_colors(prompt: str) -> dict:
     """Extract a hex color palette from a natural language prompt using Ollama."""
     import httpx
+
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.post(

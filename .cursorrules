@@ -1,0 +1,12 @@
+## Session Context (Mixx-DJ-MCP)
+
+You have access to a Mixxx DJ controller with 12+ portmanteau tools covering deck control, library, effects, mixer, stems, transitions, skin management, vinyl control, and more.
+
+**Before starting work:**
+1. Check deck status: mixx_deck(operation="play_pause", deck=1)
+2. Library search: mixx_library(operation="search", query="<topic>")
+3. Preview transition suggestions: mixx_transition(operation="suggest", deck_a=1, deck_b=2)
+
+**At end of work:**
+- Save any crate/preset changes: mixx_crate(operation="create", name="<name>")
+- Document playlist decisions for future sessions

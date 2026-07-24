@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "text",
+            "text": "## Session Context (Mixx-DJ-MCP)\n\nYou have access to a Mixxx DJ controller with 12+ portmanteau tools covering deck control, library, effects, mixer, stems, transitions, skin management, vinyl control, and more.\n\n**Before starting work:**\n1. Check deck status: mixx_deck(operation=\"play_pause\", deck=1)\n2. Library search: mixx_library(operation=\"search\", query=\"<topic>\")\n3. Preview transition suggestions: mixx_transition(operation=\"suggest\", deck_a=1, deck_b=2)\n\n**At end of work:**\n- Save any crate/preset changes: mixx_crate(operation=\"create\", name=\"<name>\")\n- Document playlist decisions for future sessions"
+          }
+        ]
+      }
+    ]
+  }
+}

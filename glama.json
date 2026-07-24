@@ -10,7 +10,7 @@
   "repository": "https://github.com/sandraschi/mixx-dj-mcp",
   "license": "MIT",
   "categories": ["media", "music", "automation"],
-  "tags": ["mixxx", "dj", "osc", "audio", "live-mixing", "deck", "effects"],
+  "tags": ["mixxx", "dj", "osc", "audio", "live-mixing", "deck", "effects", "stems", "transitions", "vinyl"],
   "requirements": ["Mixxx 2.5+ with OSC enabled", "Python 3.12+", "bun for webapp"],
   "tools": [
     {
@@ -28,6 +28,50 @@
     {
       "name": "mixx_mixer",
       "description": "Crossfader, per-channel EQ (high/mid/low), gain, volume, headphone cue, talkover, orientation, balance"
+    },
+    {
+      "name": "mixx_stems",
+      "description": "Stem separation via Demucs, sampler loading, stem-aware mixing, mute/volume control"
+    },
+    {
+      "name": "mixx_transition",
+      "description": "AI-powered transitions between decks: suggest, apply (echo/filter/hard-cut/spin-back/flanger/reverb/blend), auto-crossfader"
+    },
+    {
+      "name": "mixx_vinyl",
+      "description": "Vinyl control calibration, scratch mode, deck mode switching"
+    },
+    {
+      "name": "mixx_crate",
+      "description": "LLM-generated smart crates based on BPM, key, genre and energy analysis"
+    },
+    {
+      "name": "mixx_skin",
+      "description": "Skin management: list, apply, preview Mixxx skins"
+    },
+    {
+      "name": "mixx_controller",
+      "description": "USB controller auto-detection and mapping management"
+    },
+    {
+      "name": "mixx_daw",
+      "description": "DAW export: render stems, mixdown, cue points to Ableton/Reaper format"
+    },
+    {
+      "name": "mixx_set",
+      "description": "AI set sequencer: plan BPM progression, energy curve, genre flow for a mix set"
+    },
+    {
+      "name": "show_deck_status_card",
+      "description": "Prefab UI card showing live deck status (play state, BPM, key, gain, volume, sync, loop)"
+    },
+    {
+      "name": "show_mixer_status_card",
+      "description": "Prefab UI card showing mixer state (crossfader, per-deck levels)"
+    },
+    {
+      "name": "show_library_status_card",
+      "description": "Prefab UI card showing library connection and search status"
     }
   ]
 }
