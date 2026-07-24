@@ -1,6 +1,6 @@
 [package]
 name = "mixx-dj-native"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tauri 2.0 desktop app for Mixx-DJ-MCP"
 edition = "2021"
 

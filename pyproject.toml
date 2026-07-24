@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mixx-dj-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "FastMCP server for Mixxx DJ software control via OSC protocol"
 readme = "README.md"
 authors = [

@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.2",
   "name": "mixx-dj-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Control Mixxx DJ software via natural language. Search library, control decks, apply effects, manage transitions.",
   "author": {
     "name": "Sandra",
