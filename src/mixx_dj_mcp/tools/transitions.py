@@ -21,24 +21,26 @@ TRANSITION_EFFECTS: dict[str, str] = {
 
 async def _llm_pick_transition(deck_a_info: dict, deck_b_info: dict, style: str) -> str:
     """Ask Ollama which transition fits the two tracks."""
-    prompt = f"""You are an expert DJ choosing a transition between two tracks.
-
-Deck A: {deck_a_info["artist"]} - {deck_a_info["title"]} ({deck_a_info["bpm"]} BPM, {deck_a_info["key"]}, genre: {deck_a_info.get("genre", "unknown")})
-Deck B: {deck_b_info["artist"]} - {deck_b_info["title"]} ({deck_b_info["bpm"]} BPM, {deck_b_info["key"]}, genre: {deck_b_info.get("genre", "unknown")})
-
-Style requested: {style}
-
-Available transitions:
-- echo_out: Progressive echo/delay on outgoing track only
-- filter_sweep: Low-pass filter on outgoing, high-pass on incoming
-- stem_swap: Drop vocals from A, bring instrumental of B (BANGER when both tracks are vocal)
-- hard_cut: Instant switch, club style (great when both tracks are high energy)
-- spin_back: Outgoing spins down like vinyl brake
-- flanger: Flanger sweep across both decks
-- reverb_kill: Reverb + delay on outgoing, then kill
-- long_blend: Slow EQ fade over 16-32 bars
-
-Respond with ONLY the transition name, nothing else."""
+    da, db = deck_a_info, deck_b_info
+    da_genre = da.get("genre", "unknown")
+    db_genre = db.get("genre", "unknown")
+    prompt = (
+        "You are an expert DJ choosing a transition between two tracks.\n\n"
+        f"Deck A: {da['artist']} - {da['title']} "
+        f"({da['bpm']} BPM, {da['key']}, genre: {da_genre})\n"
+        f"Deck B: {db['artist']} - {db['title']} "
+        f"({db['bpm']} BPM, {db['key']}, genre: {db_genre})\n\n"
+        f"Style requested: {style}\n\nAvailable transitions:\n"
+        "- echo_out: Progressive echo/delay on outgoing track only\n"
+        "- filter_sweep: Low-pass filter on outgoing, high-pass on incoming\n"
+        "- stem_swap: Drop vocals from A, bring instrumental of B\n"
+        "- hard_cut: Instant switch, club style\n"
+        "- spin_back: Outgoing spins down like vinyl brake\n"
+        "- flanger: Flanger sweep across both decks\n"
+        "- reverb_kill: Reverb + delay on outgoing, then kill\n"
+        "- long_blend: Slow EQ fade over 16-32 bars\n\n"
+        "Respond with ONLY the transition name, nothing else."
+    )
     try:
         import httpx
 
@@ -56,7 +58,7 @@ Respond with ONLY the transition name, nothing else."""
                 if choice in TRANSITION_EFFECTS:
                     return choice
     except Exception:
-        pass
+        console.print("[yellow]Ollama transition suggestion failed[/yellow]")
     return "filter_sweep"
 
 

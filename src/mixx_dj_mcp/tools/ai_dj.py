@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from fastmcp import FastMCP, Context
+from fastmcp import Context, FastMCP
 from rich.console import Console
 
 from ..bridge.osc_bridge import get_bridge
@@ -88,8 +88,10 @@ async def mixx_ai_set(
                 f"Deck B has: {info_b['artist']} - {info_b['title']} ({info_b['bpm']} BPM, {info_b['key']})\n\n"
                 f"What transition should I use between these two tracks? Consider BPM difference, "
                 f"key compatibility (Camelot wheel), and energy levels.\n"
-                f"Choose from: echo_out, filter_sweep, stem_swap, hard_cut, spin_back, flanger, reverb_kill, long_blend\n"
-                f"Respond with: {{'transition': 'name', 'reason': 'explanation', 'bpm_match': true/false, 'key_compatible': true/false}}"
+                "Choose from: echo_out, filter_sweep, stem_swap, hard_cut, "
+                "spin_back, flanger, reverb_kill, long_blend\n"
+                "Respond with: {'transition': 'name', 'reason': 'explanation', "
+                "'bpm_match': true/false, 'key_compatible': true/false}"
             )
             suggestion = ""
             if ctx and hasattr(ctx, "sample"):
@@ -98,7 +100,14 @@ async def mixx_ai_set(
                 except Exception:
                     suggestion = ""
             if not suggestion:
-                suggestion = '{"transition": "filter_sweep", "reason": "Safe all-purpose transition", "bpm_match": false, "key_compatible": false}'
+                suggestion = json.dumps(
+                    {
+                        "transition": "filter_sweep",
+                        "reason": "Safe all-purpose transition",
+                        "bpm_match": False,
+                        "key_compatible": False,
+                    }
+                )
             return {
                 "success": True,
                 "message": f"Suggested transition for {info_a['artist']} -> {info_b['artist']}",
@@ -120,7 +129,8 @@ async def mixx_ai_set(
                     if result and result.strip() in TRANSITION_EFFECTS:
                         choice = result.strip()
                 except Exception:
-                    pass
+                    logger = __import__("logging").getLogger(__name__)
+                    logger.debug("AI sample failed for transition choice")
 
             if choice == "echo_out":
                 bridge.send(f"/deck/{deck_a}/filterHigh", 0.0)

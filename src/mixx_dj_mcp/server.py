@@ -259,7 +259,11 @@ async def music_generate(body: dict):
         console.print(f"[yellow]songgeneration-mcp failed: {e}[/yellow]")
 
     return {
-        "error": "All music generation backends failed. Try: uv add transformers torch scipy (MusicGen) or set GOOGLE_CLOUD_PROJECT (Lyria)"
+        "error": (
+            "All music generation backends failed. "
+            "Try: uv add transformers torch scipy (MusicGen) "
+            "or set GOOGLE_CLOUD_PROJECT (Lyria)"
+        ),
     }
 
 
@@ -395,7 +399,7 @@ async def _try_execute_command(msg: str) -> dict | None:
                 pct = float(w)
                 val = pct / 100 if pct > 1 else pct
             except Exception:
-                pass
+                logger.debug("Failed to parse volume value from: %s", word)
         bridge.send(f"/deck/{deck}/volume", min(1.0, max(0.0, val)))
         return {"message": f"Deck {deck} volume set to {val:.0%}.", "executed": True, "deck": deck, "volume": val}
 
@@ -433,7 +437,11 @@ async def llm_chat(body: dict):
 
     # Ollama failed — not a command, not an LLM request
     return {
-        "message": "Not recognized as a DJ command and no LLM available. Try: 'play deck 1', 'sync deck 2', 'crossfader left', 'load track to deck 1' from Library."
+        "message": (
+            "Not recognized as a DJ command and no LLM available. "
+            "Try: 'play deck 1', 'sync deck 2', 'crossfader left', "
+            "'load track to deck 1' from Library."
+        ),
     }
 
 
@@ -529,7 +537,7 @@ async def cockpit_now_playing():
         if _active_recording:
             recording = {"name": _active_recording["name"], "events": _active_recording["events"]}
     except Exception:
-        pass
+        logger.debug("Failed to read active recording state")
     return {
         "decks": decks,
         "crossfader": bridge.get_global_state("crossfader", 0.0),

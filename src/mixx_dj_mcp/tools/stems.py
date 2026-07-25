@@ -139,7 +139,11 @@ async def mixx_stems(
             if not track_path:
                 return {
                     "success": False,
-                    "message": "Could not detect track path for deck {deck}. Load a track first via mixx_deck(operation='load', ...) or use mixx_stems with a directly provided path.",
+                    "message": (
+                        f"Could not detect track path for deck {deck}. "
+                        "Load a track first via mixx_deck(operation='load', ...) "
+                        "or use mixx_stems with a directly provided path."
+                    ),
                     "data": {"demucs_available": True, "deck": deck},
                 }
 
@@ -164,7 +168,10 @@ async def mixx_stems(
         elif operation == "load_stems":
             return {
                 "success": False,
-                "message": "load_stems requires stem file paths from a prior separate operation. Call separate first to generate stems, then provide the result paths.",
+                "message": (
+                    "load_stems requires stem file paths from a prior separate operation. "
+                    "Call separate first to generate stems, then provide the result paths."
+                ),
                 "data": {},
             }
 
@@ -174,7 +181,9 @@ async def mixx_stems(
             bridge.send("/sampler/4/volume", 0.0)
             return {
                 "success": True,
-                "message": f"Stem transition: dropping vocals from deck {deck_a}, bringing instrumental of deck {deck_b}",
+                "message": (
+                    f"Stem transition: dropping vocals from deck {deck_a}, bringing instrumental of deck {deck_b}"
+                ),
                 "data": {"deck_a": deck_a, "deck_b": deck_b},
             }
 

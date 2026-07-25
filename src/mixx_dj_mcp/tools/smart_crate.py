@@ -39,7 +39,8 @@ def register_crate_tools(mcp: FastMCP):
             mixx_crate("create", name="Peak Time", prompt="tech house 124-128 BPM D minor")
             mixx_crate("list")
             mixx_crate("add_track", name="Favorites", deck=1)
-            mixx_crate("create_agentic", name="Morning Warmup", rule="126-132 BPM, Dm or Em, 4+ stars, genre:tech house")
+            mixx_crate("create_agentic", name="Morning Warmup",
+                       rule="126-132 BPM, Dm or Em, 4+ stars, genre:tech house")
         """
         try:
             bridge = get_bridge()

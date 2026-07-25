@@ -111,7 +111,9 @@ async def mixx_recording(
     elif operation == "list":
         db = get_db()
         cur = db.execute(
-            "SELECT id, name, started_at, ended_at, duration_seconds, track_count, transition_count, osc_events FROM set_recordings ORDER BY started_at DESC LIMIT 50"
+            "SELECT id, name, started_at, ended_at, duration_seconds, "
+            "track_count, transition_count, osc_events "
+            "FROM set_recordings ORDER BY started_at DESC LIMIT 50"
         )
         sets = [dict(r) for r in cur.fetchall()]
         return {
@@ -181,7 +183,8 @@ def record_osc_event(address: str, value: Any):
         _active_recording["file"].flush()
         _active_recording["events"] += 1
     except Exception:
-        pass
+        logger = __import__("logging").getLogger(__name__)
+        logger.debug("Failed to record OSC event: %s", address)
 
 
 def register_recording_tools(mcp: FastMCP):

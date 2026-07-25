@@ -224,7 +224,7 @@ async def _parse_prompt_for_colors(prompt: str) -> dict:
                     parsed = json.loads(text[start:end])
                     return {k: v for k, v in parsed.items() if isinstance(v, str) and v.startswith("#")}
     except Exception:
-        pass
+        console.print("[yellow]Failed to parse colors from LLM response[/yellow]")
     return dict(_DEFAULT_COLORS)
 
 
@@ -259,7 +259,7 @@ async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str
                     "result", {}
                 ).get("success", False)
     except Exception:
-        pass
+        console.print("[yellow]inkscape-mcp probe failed[/yellow]")
 
     count = 0
 
@@ -288,7 +288,7 @@ async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str
             svg.write_text(content, encoding="utf-8")
             count += 1
         except Exception:
-            pass
+            console.print(f"[yellow]Failed to recolor SVG: {svg.name}[/yellow]")
 
     return count
 
@@ -432,9 +432,12 @@ def register_skin_tools(mcp: FastMCP):
                 install_path = _get_skins_path() / skin_id
 
                 if AVAILABLE_SKINS[skin_id].get("source") == "bundled":
+                    name = AVAILABLE_SKINS[skin_id]["name"]
                     return {
                         "success": True,
-                        "message": f"'{AVAILABLE_SKINS[skin_id]['name']}' is bundled with Mixxx. Select it in Preferences \u2192 Interface \u2192 Skin.",
+                        "message": (
+                            f"'{name}' is bundled with Mixxx. Select it in Preferences \u2192 Interface \u2192 Skin."
+                        ),
                         "data": {"skin": skin_id, "bundled": True},
                     }
 
@@ -445,10 +448,11 @@ def register_skin_tools(mcp: FastMCP):
                         "data": {"skin": skin_id, "path": str(install_path)},
                     }
 
+                source = AVAILABLE_SKINS[skin_id].get("source", "N/A")
                 return {
                     "success": False,
-                    "message": f"Auto-install for '{skin_id}' requires manual download. Visit: {AVAILABLE_SKINS[skin_id].get('source', 'N/A')}",
-                    "data": {"skin": skin_id, "source": AVAILABLE_SKINS[skin_id].get("source")},
+                    "message": (f"Auto-install for '{skin_id}' requires manual download. Visit: {source}"),
+                    "data": {"skin": skin_id, "source": source},
                 }
 
             elif operation == "uninstall":
@@ -494,7 +498,10 @@ def register_skin_tools(mcp: FastMCP):
                     else:
                         return {
                             "success": False,
-                            "message": "LateNight skin not found. Install Mixxx first or copy a LateNight skin to the user skins directory.",
+                            "message": (
+                                "LateNight skin not found. Install Mixxx first "
+                                "or copy a LateNight skin to the user skins directory."
+                            ),
                             "data": {"hint": "Default location: C:\\Program Files\\Mixxx\\res\\skins\\latenight"},
                         }
 
@@ -508,7 +515,9 @@ def register_skin_tools(mcp: FastMCP):
                         "skin_id": target_id,
                         "path": str(target_path),
                         "files_modified": modified,
-                        "note": "Select 'latenight-video' in Mixxx Preferences \u2192 Interface \u2192 Skin and restart.",
+                        "note": (
+                            "Select 'latenight-video' in Mixxx Preferences \u2192 Interface \u2192 Skin and restart."
+                        ),
                     },
                 }
 

@@ -224,7 +224,10 @@ def register_controller_tools(mcp: FastMCP):
             elif operation == "download":
                 return {
                     "success": True,
-                    "message": "Community mapping download from GitHub coming soon. Use Mixxx Preferences → MIDI/OSC → Load Mapping for now.",
+                    "message": (
+                        "Community mapping download from GitHub coming soon. "
+                        "Use Mixxx Preferences \u2192 MIDI/OSC \u2192 Load Mapping for now."
+                    ),
                     "data": {"note": "Mixxx ships with ~200 built-in mappings"},
                 }
 

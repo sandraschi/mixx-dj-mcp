@@ -100,6 +100,7 @@ asyncio_mode = "auto"
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "pre-commit>=4.6.1",
     "pyinstaller>=6.21.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",

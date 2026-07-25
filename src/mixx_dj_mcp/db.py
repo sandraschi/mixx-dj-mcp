@@ -5,7 +5,6 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-
 _db_lock = threading.Lock()
 _db_path: Path | None = None
 
@@ -96,7 +95,9 @@ def store_analysis(
 def log_play(deck: int, track_path: str, title: str, artist: str, bpm: float, key: str, duration: float):
     with _db_lock:
         get_db().execute(
-            "INSERT INTO play_history (deck, track_path, track_title, track_artist, bpm, key, started_at, duration_seconds) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO play_history "
+            "(deck, track_path, track_title, track_artist, bpm, key, started_at, duration_seconds) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (deck, track_path, title, artist, bpm, key, datetime.utcnow().isoformat(), duration),
         )
         get_db().commit()
@@ -107,7 +108,9 @@ def log_transition(
 ):
     with _db_lock:
         get_db().execute(
-            "INSERT INTO transitions_log (set_id, from_deck, to_deck, transition_type, bpm_a, bpm_b, key_a, key_b, timestamp) VALUES (?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO transitions_log "
+            "(set_id, from_deck, to_deck, transition_type, bpm_a, bpm_b, key_a, key_b, timestamp) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
             (set_id, from_deck, to_deck, ttype, bpm_a, bpm_b, key_a, key_b, datetime.utcnow().isoformat()),
         )
         get_db().commit()
@@ -123,15 +126,18 @@ def style_profile() -> dict:
         )
         row = cur.fetchone()
         cur2 = get_db().execute(
-            "SELECT transition_type, COUNT(*) as cnt FROM transitions_log GROUP BY transition_type ORDER BY cnt DESC LIMIT 5"
+            "SELECT transition_type, COUNT(*) as cnt FROM transitions_log "
+            "GROUP BY transition_type ORDER BY cnt DESC LIMIT 5"
         )
         top_transitions = [dict(r) for r in cur2.fetchall()]
         cur3 = get_db().execute(
-            "SELECT key, COUNT(*) as cnt FROM play_history WHERE key IS NOT NULL AND key != '' GROUP BY key ORDER BY cnt DESC LIMIT 10"
+            "SELECT key, COUNT(*) as cnt FROM play_history "
+            "WHERE key IS NOT NULL AND key != '' GROUP BY key ORDER BY cnt DESC LIMIT 10"
         )
         top_keys = [dict(r) for r in cur3.fetchall()]
         cur4 = get_db().execute(
-            "SELECT track_title, track_artist, COUNT(*) as cnt FROM play_history GROUP BY track_path ORDER BY cnt DESC LIMIT 10"
+            "SELECT track_title, track_artist, COUNT(*) as cnt "
+            "FROM play_history GROUP BY track_path ORDER BY cnt DESC LIMIT 10"
         )
         top_tracks = [dict(r) for r in cur4.fetchall()]
         return {

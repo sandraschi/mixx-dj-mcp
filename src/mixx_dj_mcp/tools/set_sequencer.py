@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sqlite3
 from pathlib import Path
 from typing import Any, Literal
@@ -175,7 +176,9 @@ def _write_mixx_playlist(db_path: str, name: str, tracks: list[dict]) -> bool:
         # Add tracks
         for i, t in enumerate(tracks):
             cursor.execute(
-                "INSERT INTO PlaylistTracks (playlist_id, track_id, position, pl_datetime_added) VALUES (?, ?, ?, datetime('now'))",
+                "INSERT INTO PlaylistTracks "
+                "(playlist_id, track_id, position, pl_datetime_added) "
+                "VALUES (?, ?, ?, datetime('now'))",
                 (playlist_id, t["id"], i),
             )
 
@@ -205,7 +208,7 @@ def _get_recordings_dir() -> str | None:
                 if dir_path and os.path.exists(dir_path):
                     return dir_path
             except Exception:
-                pass
+                console.print(f"[yellow]Failed to read Mixxx config {cfg_path}[/yellow]")
 
     fallbacks = [
         os.path.expanduser("~/Mixxx/Recordings"),
@@ -221,9 +224,13 @@ def _get_audio_duration(path: str) -> float:
     """Get audio file duration using ffprobe."""
     import subprocess
 
+    ffprobe_path = shutil.which("ffprobe")
+    if not ffprobe_path:
+        return 0
+
     try:
-        r = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", path],
+        r = subprocess.run(  # noqa: S603
+            [ffprobe_path, "-v", "quiet", "-print_format", "json", "-show_format", path],
             capture_output=True,
             timeout=15,
         )
@@ -231,7 +238,7 @@ def _get_audio_duration(path: str) -> float:
             data = json.loads(r.stdout)
             return float(data.get("format", {}).get("duration", 0))
     except Exception:
-        pass
+        console.print(f"[yellow]ffprobe failed for {path}[/yellow]")
     return 0
 
 
