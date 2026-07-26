@@ -11,6 +11,7 @@ export default function Library() {
   const [loading, setLoading] = useState(false);
   const [targetDeck, setTargetDeck] = useState(1);
   const [loadedTrack, setLoadedTrack] = useState<string | null>(null);
+  const [searchNote, setSearchNote] = useState<string | null>(null);
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -19,13 +20,18 @@ export default function Library() {
       return;
     }
     setLoading(true);
+    setSearchNote(null);
     try {
       const r = await fetchLibraryQuery(q);
       setResults(r.results);
       setTotal(r.total);
-    } catch {
+      if (r.message && r.total === 0) {
+        setSearchNote(r.message);
+      }
+    } catch (err) {
       setResults([]);
       setTotal(0);
+      setSearchNote(err instanceof Error ? err.message : "Search failed");
     }
     setLoading(false);
   }, []);
@@ -100,6 +106,10 @@ export default function Library() {
         </button>
       </form>
 
+      {searchNote && (
+        <p className="text-sm text-amber-400/90">{searchNote}</p>
+      )}
+
       {total > 0 && (
         <p className="text-xs text-slate-500">{total} result(s) &middot; Deck {targetDeck}</p>
       )}
@@ -125,7 +135,7 @@ export default function Library() {
             <button
               onClick={() => loadToDeck(track)}
               disabled={track.loading}
-              className="px-3 py-1 text-xs font-medium rounded bg-amber-500/10 text-amber-400 opacity-0 group-hover:opacity-100 hover:bg-amber-500/20 transition-all disabled:opacity-50"
+              className="px-3 py-1 text-xs font-medium rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all disabled:opacity-50"
             >
               {track.loading ? (
                 <Loader2 size={12} className="animate-spin" />

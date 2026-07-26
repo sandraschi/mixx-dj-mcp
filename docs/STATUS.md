@@ -1,6 +1,6 @@
 # mixx-dj-mcp — Status
 
-Last updated: 2026-07-26. Companion to [mixxxxx](https://github.com/sandraschi/mixxxxx)
+Last updated: 2026-07-27. Companion to [mixxxxx](https://github.com/sandraschi/mixxxxx)
 (`video` branch).
 
 ## Integration with mixxxxx
@@ -17,8 +17,11 @@ Last updated: 2026-07-26. Companion to [mixxxxx](https://github.com/sandraschi/m
 
 | Page | Status | Note |
 |---|---|---|
-| Cockpit, Decks, Library, … | Works | SOTA React 19 stack |
+| Cockpit, Decks, Chat, Tools, Settings | Works | SOTA React 19 stack |
+| **Library** | Works | `POST /api/library/search` queries local `mixxxdb.sqlite` |
+| **Effects** | Works | `POST /api/v1/effects` → `mixx_effects` OSC |
 | **Help** (`/help`) | Works (source) | Overview, **NDI**, Video, Skins, OSC tabs |
+| `/api/v1/tools/call` | Works | Generic MCP tool bridge (Skins install, DAW sync, …) |
 | Help in frozen NSIS build | Rebuild needed | `web_sota/dist/` gitignored — run `npm run build` |
 
 ## Documentation

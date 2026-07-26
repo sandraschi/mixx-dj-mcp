@@ -31,6 +31,27 @@ class CueRequest(BaseModel):
     mode: str = "cue"
 
 
+class LibrarySearchRequest(BaseModel):
+    query: str
+    limit: int = 50
+
+
+class ToolCallRequest(BaseModel):
+    name: str
+    arguments: dict = {}
+
+
+class EffectsRequest(BaseModel):
+    operation: str
+    rack: int = 1
+    unit: int = 1
+    effect: str | None = None
+    parameter: int = 1
+    value: float | None = None
+    deck: int | None = None
+    enable: bool = True
+
+
 console = Console(file=sys.stderr)
 
 current_dir = Path(__file__).parent
@@ -61,6 +82,8 @@ def get_tool_count() -> int:
     return _registered_tool_count
 
 
+from .mixxx_library import search_library  # noqa: E402
+from .tool_dispatch import build_tool_dispatch, dispatch_tool  # noqa: E402
 from .tools import register_all_tools  # noqa: E402
 
 register_all_tools(mcp)
@@ -68,6 +91,7 @@ register_all_tools(mcp)
 _registered_tool_count = (
     len(mcp._tool_manager._tools) if hasattr(mcp, "_tool_manager") and hasattr(mcp._tool_manager, "_tools") else 0
 )
+_tool_dispatch = build_tool_dispatch(mcp)
 
 fastapi_app = create_app(config)
 
@@ -146,6 +170,41 @@ async def deck_status():
             }
         )
     return {"decks": decks, "crossfader": bridge.get_global_state("crossfader", 0.0)}
+
+
+@fastapi_app.post("/api/library/search")
+async def library_search(req: LibrarySearchRequest):
+    """Search the local Mixxx SQLite library and mirror query to Mixxx OSC."""
+    query = req.query.strip()
+    if not query:
+        return {"results": [], "total": 0, "message": "query required"}
+
+    result = search_library(query, limit=req.limit)
+    bridge = get_osc_bridge()
+    bridge.send("/library/search", query)
+    return {
+        "results": result["results"],
+        "total": result["total"],
+        "message": result["message"],
+        "database": result.get("database"),
+    }
+
+
+@fastapi_app.post("/api/v1/tools/call")
+async def tools_call(req: ToolCallRequest):
+    """Invoke a registered MCP tool from the webapp or scripts."""
+    result = await dispatch_tool(_tool_dispatch, req.name, req.arguments)
+    return {"success": True, "tool": req.name, "result": result}
+
+
+@fastapi_app.post("/api/v1/effects")
+async def effects_action(req: EffectsRequest):
+    """Apply an effect rack operation via mixx_effects."""
+    payload = req.model_dump(exclude_none=True)
+    result = await dispatch_tool(_tool_dispatch, "mixx_effects", payload)
+    if isinstance(result, dict) and result.get("success") is False:
+        return {"success": False, "message": result.get("message", "effect failed"), "data": result.get("data", {})}
+    return result
 
 
 # Music generation — lazy-loaded MusicGen via HuggingFace

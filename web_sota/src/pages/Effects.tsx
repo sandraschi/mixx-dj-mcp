@@ -1,70 +1,234 @@
-import { useCallback } from "react";
-import { Sparkles, Sliders } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Sparkles, Sliders, Loader2, Check, AlertCircle } from "lucide-react";
+import { callEffects } from "../lib/api";
+
+const QUICK_ACTIONS = [
+  {
+    label: "Chain 1: Reverb",
+    payload: { operation: "chain_load", rack: 1, unit: 1, effect: "Reverb" },
+  },
+  {
+    label: "Chain 2: Flanger",
+    payload: { operation: "chain_load", rack: 1, unit: 2, effect: "Flanger" },
+  },
+  {
+    label: "Clear Chain 1",
+    payload: { operation: "chain_clear", rack: 1, unit: 1 },
+  },
+  {
+    label: "Enable Rack 1 Unit 1",
+    payload: { operation: "effect_enable", rack: 1, unit: 1, enable: true },
+  },
+] as const;
+
+const EFFECT_PRESETS = [
+  "Reverb",
+  "Echo",
+  "Flanger",
+  "Filter",
+  "Distortion",
+  "Phaser",
+] as const;
 
 export default function Effects() {
-  const handleMixxEffects = useCallback((effect: string) => {
-    // Use mixx_effects tool via API
-    console.log("Call mixx_effects via MCP:", effect);
+  const [rack, setRack] = useState(1);
+  const [unit, setUnit] = useState(1);
+  const [effectName, setEffectName] = useState("Reverb");
+  const [meta, setMeta] = useState(0.5);
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const runEffect = useCallback(async (payload: Record<string, unknown>) => {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const result = await callEffects(payload);
+      if (result.success === false) {
+        setStatus({ ok: false, text: result.message || "Effect command failed" });
+      } else {
+        setStatus({
+          ok: true,
+          text: result.message || "Effect command sent via OSC",
+        });
+      }
+    } catch (err) {
+      setStatus({
+        ok: false,
+        text: err instanceof Error ? err.message : "Backend request failed",
+      });
+    } finally {
+      setBusy(false);
+    }
   }, []);
 
   return (
     <div className="space-y-6" data-testid="effects-page">
-      <h2 className="text-xl font-semibold text-slate-100">Effects</h2>
-
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-8 text-center">
-        <Sparkles size={48} className="mx-auto text-slate-700 mb-4" />
-        <h3 className="text-lg font-medium text-slate-300 mb-2">
-          Effects via MCP Tools
-        </h3>
-        <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-          Mixxx doesn't expose effect rack state over OSC. Use the
-          <code className="mx-1 px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 text-xs">
-            mixx_effects
-          </code>
-          MCP tool to control effects from your AI assistant.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {[
-            { label: "Chain 1: Reverb", cmd: 'mixx_effects("chain_load", rack=1, unit=1, effect="Reverb")' },
-            { label: "Chain 2: Flanger", cmd: 'mixx_effects("chain_load", rack=1, unit=2, effect="Flanger")' },
-            { label: "Clear Chain 1", cmd: 'mixx_effects("chain_clear", rack=1, unit=1)' },
-          ].map((item) => (
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold text-slate-100">Effects</h2>
+        <div className="flex items-center gap-2 text-sm text-slate-400">
+          <span>Rack</span>
+          {[1, 2, 3, 4].map((n) => (
             <button
-              key={item.label}
-              onClick={() => handleMixxEffects(item.cmd)}
-              className="px-3 py-2 text-xs rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors border border-slate-700"
+              key={n}
+              type="button"
+              onClick={() => setRack(n)}
+              className={`w-7 h-7 rounded text-xs font-mono transition-colors ${
+                rack === n
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  : "bg-slate-800 text-slate-400 border border-slate-700"
+              }`}
             >
-              {item.label}
+              {n}
+            </button>
+          ))}
+          <span className="ml-2">Unit</span>
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setUnit(n)}
+              className={`w-7 h-7 rounded text-xs font-mono transition-colors ${
+                unit === n
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  : "bg-slate-800 text-slate-400 border border-slate-700"
+              }`}
+            >
+              {n}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map((rack) => (
-          <div
-            key={rack}
-            className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+      {status && (
+        <div
+          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+            status.ok
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+              : "border-red-500/30 bg-red-500/10 text-red-300"
+          }`}
+        >
+          {status.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+          <span>{status.text}</span>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles size={18} className="text-amber-400" />
+          <h3 className="text-base font-medium text-slate-200">Quick actions</h3>
+        </div>
+        <p className="text-sm text-slate-400 mb-4">
+          Sends OSC to Mixxx effect racks via <code className="text-amber-400">/api/v1/effects</code>.
+          Mixxx must be running with OSC enabled.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {QUICK_ACTIONS.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              disabled={busy}
+              onClick={() => runEffect(item.payload)}
+              className="px-3 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 hover:text-slate-100 hover:bg-slate-700 transition-colors border border-slate-700 disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={14} className="animate-spin inline" /> : item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Sliders size={16} className="text-amber-400" />
+          <h3 className="text-base font-medium text-slate-200">
+            Rack {rack} · Unit {unit}
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="block text-sm text-slate-400">
+            Effect chain
+            <select
+              value={effectName}
+              onChange={(e) => setEffectName(e.target.value)}
+              className="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-200"
+            >
+              {EFFECT_PRESETS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-sm text-slate-400">
+            Meta knob ({meta.toFixed(2)})
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={meta}
+              onChange={(e) => setMeta(Number(e.target.value))}
+              className="mt-2 w-full"
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              runEffect({
+                operation: "chain_load",
+                rack,
+                unit,
+                effect: effectName,
+              })
+            }
+            className="px-4 py-2 text-sm rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 disabled:opacity-50"
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Sliders size={14} className="text-amber-400" />
-              <h3 className="text-sm font-medium text-slate-300">
-                Effect Rack {rack}
-              </h3>
-            </div>
-            {[1, 2, 3].map((unit) => (
-              <div
-                key={unit}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/30 mb-1.5 text-sm"
-              >
-                <span className="text-xs text-slate-500 w-16">Unit {unit}</span>
-                <span className="text-slate-500 italic text-xs">
-                  Use mixx_effects tool
-                </span>
-              </div>
-            ))}
-          </div>
-        ))}
+            Load effect
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => runEffect({ operation: "chain_clear", rack, unit })}
+            className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50"
+          >
+            Clear chain
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              runEffect({ operation: "meta_set", rack, unit, value: meta })
+            }
+            className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50"
+          >
+            Set meta
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              runEffect({ operation: "effect_enable", rack, unit, enable: true })
+            }
+            className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50"
+          >
+            Enable unit
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              runEffect({ operation: "effect_enable", rack, unit, enable: false })
+            }
+            className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50"
+          >
+            Disable unit
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ from fastmcp import FastMCP
 from rich.console import Console
 
 from ..bridge.osc_bridge import get_bridge
+from ..mixxx_library import search_library
 
 console = Console(file=__import__("sys").stderr)
 
@@ -54,8 +55,18 @@ async def mixx_library(
         if operation == "search":
             if not query:
                 return {"success": False, "message": "query required for search", "data": {}}
+            db_result = search_library(query)
             bridge.send("/library/search", query)
-            return {"success": True, "message": f"Searching library for: {query}", "data": {"query": query}}
+            return {
+                "success": True,
+                "message": db_result["message"],
+                "data": {
+                    "query": query,
+                    "results": db_result["results"],
+                    "total": db_result["total"],
+                    "database": db_result.get("database"),
+                },
+            }
 
         elif operation == "browse_crate":
             if not crate:

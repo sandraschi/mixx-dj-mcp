@@ -80,6 +80,20 @@ export interface LibraryItem {
 export interface LibrarySearchResponse {
   results: LibraryItem[];
   total: number;
+  message?: string;
+  database?: string | null;
+}
+
+export interface EffectsResponse {
+  success: boolean;
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface ToolCallResponse {
+  success: boolean;
+  tool: string;
+  result: unknown;
 }
 
 export function fetchHealth(): Promise<HealthResponse> {
@@ -98,6 +112,22 @@ export function fetchLibraryQuery(
   query: string
 ): Promise<LibrarySearchResponse> {
   return apiPost<LibrarySearchResponse>("/api/library/search", { query });
+}
+
+export function callEffects(
+  payload: Record<string, unknown>
+): Promise<EffectsResponse> {
+  return apiPost<EffectsResponse>("/api/v1/effects", payload);
+}
+
+export function callTool(
+  name: string,
+  arguments_: Record<string, unknown> = {}
+): Promise<ToolCallResponse> {
+  return apiPost<ToolCallResponse>("/api/v1/tools/call", {
+    name,
+    arguments: arguments_,
+  });
 }
 
 export interface LLMProvider {
