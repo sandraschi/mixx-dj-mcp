@@ -9,6 +9,7 @@ import Skins from "./pages/Skins";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Cockpit from "./pages/Cockpit";
+import Help from "./pages/Help";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/skins" element={<Skins />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/help" element={<Help />} />
       </Route>
     </Routes>
   );

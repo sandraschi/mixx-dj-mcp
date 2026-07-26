@@ -27,6 +27,7 @@
   <a href="docs/TOOLS.md">Tools</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/MIXXX_VIDEO.md">Video</a> ·
+  <a href="docs/NDI.md">NDI</a> ·
   <a href="docs/NOOB_GUIDE.md">Beginner Guide</a> ·
   <a href="docs/AI_TRANSITIONS.md">AI Transitions</a>
   </sub>
@@ -86,6 +87,7 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 | **Installing** the server, webapp, NSIS installer, or MCPB | [`docs/INSTALL.md`](docs/INSTALL.md) |
 | **Full tool reference** with parameters, returns, and examples | [`docs/TOOLS.md`](docs/TOOLS.md) |
 | **Using video** — requires the mixxxxx fork of Mixxx | [`docs/MIXXX_VIDEO.md`](docs/MIXXX_VIDEO.md) |
+| **NDI** (planned network video — primer) | [`docs/NDI.md`](docs/NDI.md) · webapp **Help → NDI** |
 | **AI-powered transitions** between decks | [`docs/AI_TRANSITIONS.md`](docs/AI_TRANSITIONS.md) |
 | **Architecture** — how the OSC bridge, REST API, and webapp work | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | **Beginner's guide** to DJing with Mixxx | [`docs/NOOB_GUIDE.md`](docs/NOOB_GUIDE.md) |

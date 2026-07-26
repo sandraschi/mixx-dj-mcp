@@ -28,8 +28,8 @@ AVAILABLE_SKINS = {
         "author": "sandraschi",
         "version": "1.0.0",
         "description": "LateNight-based with video previews, output panel, projector controls",
-        "tags": ["video-ready", "4-deck", "dark", "recommended"],
-        "source": "https://github.com/sandraschi/mixxxxx",
+        "tags": ["video-ready", "4-deck", "daylight", "recommended"],
+        "source": "bundled with mixxxxx (res/skins/MixxxxxVideo)",
         "preview_url": "",
     },
     "latenight": {
@@ -77,6 +77,33 @@ AVAILABLE_SKINS = {
         "source": "https://github.com/search?q=mixxx+skin+tara",
         "preview_url": "",
     },
+    "traktmixxx-raw": {
+        "name": "Traktmixxx-RAW",
+        "author": "djraw",
+        "version": "2.3",
+        "description": "Traktor-like 4-deck resizable skin",
+        "tags": ["4-deck", "community", "github"],
+        "source": "https://github.com/djraw/Traktmixxx-RAW",
+        "preview_url": "",
+    },
+    "esbrandt-sources": {
+        "name": "esbrandt mixxx-skins (SVG sources)",
+        "author": "S.Brandt",
+        "version": "layered",
+        "description": "Inkscape layer sources for LateNight/Phoney/Outline — mod base, not install zip",
+        "tags": ["svg", "inkscape", "github", "sources"],
+        "source": "https://github.com/esbrandt/mixxx-skins",
+        "preview_url": "",
+    },
+    "discourse-skins": {
+        "name": "Mixxx Discourse Skins category",
+        "author": "community",
+        "version": "",
+        "description": "Forum downloads — no central marketplace",
+        "tags": ["community", "forum"],
+        "source": "https://mixxx.discourse.group/c/skins/7",
+        "preview_url": "",
+    },
     "djcontrol": {
         "name": "DJ Control Compact",
         "author": "Hercules",
@@ -116,44 +143,69 @@ def _find_bundled_skin(skin_id: str) -> Path | None:
     return None
 
 
-_VIDEO_WIDGET_XML = """
-    <!-- VideoWidget (inserted by mixx_skin create_video_skin) -->
-    <WidgetGroup>
-        <ObjectName>VideoWidget</ObjectName>
-        <Layout>vertical</Layout>
-        <Size>240,180</Size>
-        <Children>
-            <WidgetGroup>
-                <ObjectName>VideoPreview</ObjectName>
-                <MinimumSize>200,130</MinimumSize>
-            </WidgetGroup>
-            <WidgetGroup>
-                <ObjectName>VideoControls</ObjectName>
-                <Layout>horizontal</Layout>
-                <Children>
-                    <PushButton><ObjectName>video_start</ObjectName></PushButton>
-                    <PushButton><ObjectName>video_stop</ObjectName></PushButton>
-                </Children>
-            </WidgetGroup>
-        </Children>
-    </WidgetGroup>"""
+def _mixxxxx_repo_roots() -> list[Path]:
+    roots: list[Path] = []
+    for key in ("MIXXXXX_PATH", "MIXXX_PATH"):
+        val = os.environ.get(key, "")
+        if val:
+            roots.append(Path(val))
+    roots.append(Path(r"D:\Dev\repos\mixxxxx"))
+    return roots
+
+
+def _find_mixxxxx_video_source() -> Path | None:
+    """Shipped mixxxxx video skin (skin.xml + daylight qss, shares LateNight assets)."""
+    for root in _mixxxxx_repo_roots():
+        candidate = root / "res" / "skins" / "MixxxxxVideo"
+        if (candidate / "skin.xml").exists():
+            return candidate
+    return None
+
+
+def _patch_video_skin_manifest(skin_xml: Path) -> None:
+    """Apply video-first defaults to a LateNight-derived skin.xml."""
+    if not skin_xml.is_file():
+        return
+    content = skin_xml.read_text(encoding="utf-8")
+
+    def _attr(key: str, value: str) -> str:
+        return f'<attribute persist="true" config_key="{key}">{value}</attribute>'
+
+    replacements = {
+        _attr("[Skin],show_video_preview", "0"): _attr("[Skin],show_video_preview", "1"),
+        _attr("[Skin],show_video_output", "0"): _attr("[Skin],show_video_output", "1"),
+        _attr("[Skin],show_spinnies", "1"): _attr("[Skin],show_spinnies", "0"),
+        _attr("[Skin],show_coverart", "1"): _attr("[Skin],show_coverart", "0"),
+        _attr("[Skin],show_4decks", "0"): _attr("[Skin],show_4decks", "1"),
+    }
+    for old, new in replacements.items():
+        content = content.replace(old, new)
+    content = re.sub(r"<title>LateNight</title>", "<title>Mixxxxx Video</title>", content)
+    skin_xml.write_text(content, encoding="utf-8")
+
+
+def _ensure_video_output_in_skin(skin_dir: Path) -> list[str]:
+    """Ensure LateNight video_output template is wired in skin.xml."""
+    skin_xml = skin_dir / "skin.xml"
+    if not skin_xml.is_file():
+        return []
+    content = skin_xml.read_text(encoding="utf-8")
+    if "video_output.xml" in content:
+        return []
+    marker = '<Template src="skins:LateNight/toolbar.xml"/>'
+    if marker not in content:
+        return []
+    content = content.replace(
+        marker,
+        marker + '\n        <Template src="skins:LateNight/video_output.xml"/>',
+    )
+    skin_xml.write_text(content, encoding="utf-8")
+    return [str(skin_xml)]
 
 
 def _inject_video_widget(skin_dir: Path) -> list[str]:
-    """Add VideoWidget entry to the skin's main XML file(s)."""
-    modified = []
-    for skin_file in skin_dir.rglob("*.skin"):
-        if not skin_file.is_file():
-            continue
-        content = skin_file.read_text(encoding="utf-8")
-        if "VideoWidget" in content:
-            continue
-        # Insert VideoWidget before the closing </Skin> tag
-        if "</Skin>" in content:
-            content = content.replace("</Skin>", f"{_VIDEO_WIDGET_XML}\n</Skin>")
-            skin_file.write_text(content, encoding="utf-8")
-            modified.append(str(skin_file))
-    return modified
+    """Legacy name: ensure video output template exists in skin.xml."""
+    return _ensure_video_output_in_skin(skin_dir)
 
 
 # ── Skin Generation Helpers ─────────────────────────────────────────────
@@ -161,6 +213,10 @@ def _inject_video_widget(skin_dir: Path) -> list[str]:
 
 def _find_late_night_skin() -> Path | None:
     """Find the LateNight skin directory (bundled or user-installed)."""
+    for root in _mixxxxx_repo_roots():
+        candidate = root / "res" / "skins" / "LateNight"
+        if (candidate / "skin.xml").exists():
+            return candidate
     candidates = [
         Path(os.environ.get("PROGRAMFILES", "C:/Program Files")) / "Mixxx" / "res" / "skins" / "LateNight",
         Path(os.environ.get("PROGRAMFILES(X86)", "C:/Program Files (x86)")) / "Mixxx" / "res" / "skins" / "LateNight",
@@ -483,40 +539,59 @@ def register_skin_tools(mcp: FastMCP):
                 }
 
             elif operation == "create_video_skin":
-                target_id = "latenight-video"
+                target_id = "MixxxxxVideo"
                 target_path = _get_skins_path() / target_id
 
                 if target_path.exists():
                     shutil.rmtree(target_path)
 
-                # Find the LateNight source
-                source_path = _get_skins_path() / "latenight"
-                if not source_path.exists():
-                    bundled = _find_bundled_skin("latenight")
-                    if bundled:
-                        source_path = bundled
-                    else:
+                source_path = _find_mixxxxx_video_source()
+                if source_path:
+                    shutil.copytree(
+                        source_path,
+                        target_path,
+                        ignore=shutil.ignore_patterns("*.bak"),
+                    )
+                    modified = _ensure_video_output_in_skin(target_path)
+                    message = f"Installed Mixxxxx Video skin at {target_path}"
+                else:
+                    late_night = _find_late_night_skin()
+                    if not late_night:
                         return {
                             "success": False,
                             "message": (
-                                "LateNight skin not found. Install Mixxx first "
-                                "or copy a LateNight skin to the user skins directory."
+                                "MixxxxxVideo and LateNight skins not found. Set MIXXXXX_PATH or install Mixxx."
                             ),
-                            "data": {"hint": "Default location: C:\\Program Files\\Mixxx\\res\\skins\\latenight"},
+                            "data": {},
                         }
-
-                shutil.copytree(source_path, target_path)
-                modified = _inject_video_widget(target_path)
+                    shutil.copytree(
+                        late_night,
+                        target_path,
+                        ignore=shutil.ignore_patterns("*.bak"),
+                    )
+                    _patch_video_skin_manifest(target_path / "skin.xml")
+                    modified = _ensure_video_output_in_skin(target_path)
+                    for root in _mixxxxx_repo_roots():
+                        daylight_qss = root / "res" / "skins" / "MixxxxxVideo" / "style_daylight.qss"
+                        if daylight_qss.is_file():
+                            shutil.copy2(daylight_qss, target_path / "style_daylight.qss")
+                            break
+                    message = (
+                        f"Built Mixxxxx Video from LateNight at {target_path} "
+                        "(Daylight scheme missing — use mixxxxx repo MixxxxxVideo skin)"
+                    )
 
                 return {
                     "success": True,
-                    "message": f"Created video-optimized skin 'latenight-video' at {target_path}",
+                    "message": message,
                     "data": {
                         "skin_id": target_id,
                         "path": str(target_path),
                         "files_modified": modified,
                         "note": (
-                            "Select 'latenight-video' in Mixxx Preferences \u2192 Interface \u2192 Skin and restart."
+                            "Select 'Mixxxxx Video' in Preferences → Interface → Skin. "
+                            "Pick the Daylight color scheme in skin settings for bright rooms. "
+                            "Requires mixxxxx build with LateNight assets."
                         ),
                     },
                 }

@@ -9,6 +9,7 @@ import {
   Wrench,
   Palette,
   Settings,
+  HelpCircle,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/chat", icon: MessageSquare, label: "Chat" },
   { to: "/tools", icon: Wrench, label: "Tools" },
   { to: "/skins", icon: Palette, label: "Skins" },
+  { to: "/help", icon: HelpCircle, label: "Help" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
