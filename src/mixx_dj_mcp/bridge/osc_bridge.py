@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import threading
+import time
 from typing import Any
 
 from pythonosc import udp_client
@@ -33,6 +34,7 @@ class OscBridge:
         self._thread: threading.Thread | None = None
         self._running = False
         self._lock = threading.Lock()
+        self._mixxx_responded = False
         self._deck_state: dict[int, dict[str, Any]] = {}
         self._global_state: dict[str, Any] = {"crossfader": 0.0}
         for d in range(1, 5):
@@ -41,7 +43,25 @@ class OscBridge:
                 self._deck_state[d][co] = 0.0
 
     def is_connected(self) -> bool:
-        return self._running
+        if not self._running:
+            return False
+        with self._lock:
+            return self._mixxx_responded
+
+    def probe_mixxx(self, timeout_s: float = 1.0) -> bool:
+        """Send heartbeat ping and wait for Mixxx OSC pong."""
+        if not self._running:
+            return False
+        with self._lock:
+            self._mixxx_responded = False
+        self.send("/mixxxxx/ping", 1.0)
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            with self._lock:
+                if self._mixxx_responded:
+                    return True
+            time.sleep(0.05)
+        return False
 
     def get_state(self, co: str, deck: int, default: Any = None) -> Any:
         with self._lock:
@@ -62,18 +82,21 @@ class OscBridge:
                 if deck and deck in self._deck_state:
                     co = parts[2] if len(parts) > 2 else "unknown"
                     if co in self._deck_state[deck]:
-                        self._deck_state[deck][co] = float(value) if isinstance(value, (int, float)) else value
+                        self._deck_state[deck][co] = float(value) if isinstance(value, int | float) else value
                     else:
-                        self._deck_state[deck][co] = float(value) if isinstance(value, (int, float)) else value
+                        self._deck_state[deck][co] = float(value) if isinstance(value, int | float) else value
             elif len(parts) >= 1 and parts[0] == "crossfader":
-                self._global_state["crossfader"] = float(value) if isinstance(value, (int, float)) else value
+                self._global_state["crossfader"] = float(value) if isinstance(value, int | float) else value
             elif len(parts) >= 2 and parts[0] == "microphone" and parts[1] == "gain":
-                self._global_state["mic_gain"] = float(value) if isinstance(value, (int, float)) else value
+                self._global_state["mic_gain"] = float(value) if isinstance(value, int | float) else value
             elif len(parts) >= 2 and parts[0] == "talkover":
-                self._global_state["talkover"] = float(value) if isinstance(value, (int, float)) else value
+                self._global_state["talkover"] = float(value) if isinstance(value, int | float) else value
 
     def _osc_handler(self, address: str, *args: Any) -> None:
         try:
+            if address == "/mixxxxx/pong":
+                with self._lock:
+                    self._mixxx_responded = True
             if args:
                 self._update_state(address, args[0])
                 logger.debug("OSC <- %s = %s", address, args[0])
@@ -125,6 +148,13 @@ class OscBridge:
         self._thread = threading.Thread(target=self._run_server, daemon=True)
         self._thread.start()
         _bridge_instance = self
+        if self.probe_mixxx(timeout_s=0.5):
+            logger.info("OSC bridge connected to Mixxx on port %d", self.config.mixx_osc_out_port)
+        else:
+            logger.warning(
+                "OSC bridge started but Mixxx did not respond to /mixxxxx/ping on port %d",
+                self.config.mixx_osc_out_port,
+            )
         logger.info("OSC bridge started on port %d", self.config.mixx_osc_out_port)
 
     def stop(self) -> None:
