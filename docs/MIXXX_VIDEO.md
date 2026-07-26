@@ -25,6 +25,7 @@
 - No real-time video effects (glitch, chroma key, overlays) — planned via `vfx-mcp`
 - No separate video mixer — video follows audio crossfader
 - No recording/mixing of video output to file
+- **No NDI network output** — planned ([`docs/NDI.md`](NDI.md) · mixxxxx [`docs/NDI.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/NDI.md))
 
 ---
 
@@ -90,19 +91,46 @@ Vanilla Mixxx returns `"fork": "mixxx"` — video controls are still available b
 
 ## Video skins
 
-mixxxxx ships with `LateNight` skin variants that include video widgets. Use `mixx_skin` to install:
+mixxxxx ships **`MixxxxxVideo`** in the repo (`res/skins/MixxxxxVideo/`) — a LateNight
+derivative with video preview/output default on and a **Daylight** colour scheme.
+Community skins: mixxxxx [`docs/SKINS.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/SKINS.md).
+
+Use `mixx_skin` to install into your user folder:
 
 ```python
 mixx_skin(operation="create_video_skin")
 ```
 
-This clones LateNight, adds VideoWidget panels, and drops the skin into your user skins directory. Select it in **Preferences > Interface > Skin > latenight-video** and restart.
+This copies the shipped bundle, patches `skin.xml` (video on, spinnies/cover off,
+4 decks), and ensures the video output panel is wired. Select **Mixxxxx Video** in
+**Preferences → Interface → Skin** (`Ctrl+P` — not the top-right gear, which is skin
+layout only).
 
 ### What the video skin includes
 
-- **Deck video preview** — small video widget in each deck strip
-- **Projector controls** — fullscreen toggle button per deck
-- **A/V sync indicator** — shows if video is frame-locked
+- **Deck video preview** — per-deck widget when companion file exists
+- **Master video output panel** — crossfader-blended output (hidden on stock LateNight)
+- **Projector / fullscreen** — `video_fullscreen` CO or MCP
+- **Daylight scheme** — light QSS variant for bright rooms
+
+---
+
+## NDI (planned)
+
+**NDI** sends live video over your LAN so OBS, Resolume, or vMix can subscribe without
+HDMI capture. Not in the build yet.
+
+| Where to read | Link |
+|---|---|
+| Full primer | mixxxxx [`docs/NDI.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/NDI.md) |
+| Short pointer | [`docs/NDI.md`](NDI.md) |
+| In-app | Webapp **Help → NDI** tab |
+
+Recommended build order before NDI: beat-locked video FX → video fallback chain → NDI
+(mixxxxx `docs/IDEAS.md`).
+
+Older docs referred to `latenight-video` from a clone-only workflow — prefer
+**MixxxxxVideo** + `create_video_skin` above.
 
 ---
 
@@ -183,7 +211,11 @@ Full build guide: [`projects/mixxxxx/README.md`](https://github.com/sandraschi/m
 
 ## See also
 
+- [`docs/STATUS.md`](STATUS.md) — mixx-dj-mcp + mixxxxx integration status
+- [`docs/TODO.md`](TODO.md) — backlog
+- [`docs/NDI.md`](NDI.md) — NDI pointer (planned)
 - [`docs/VIDEO.md`](../docs/VIDEO.md) — original video notes (legacy)
 - [`docs/AI_TRANSITIONS.md`](../docs/AI_TRANSITIONS.md) — audio transitions that work with video
 - [`docs/INSTALL.md`](../docs/INSTALL.md) — full server installation
+- Webapp **Help** (`/help`) — Overview, NDI, Video, Skins, OSC
 - [`mcp-central-docs/projects/mixxxxx/`](https://github.com/sandraschi/mcp-central-docs/projects/mixxxxx/) — fleet project page

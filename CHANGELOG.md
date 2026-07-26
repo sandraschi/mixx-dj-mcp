@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.1 (2026-07-26)
+
+### Webapp
+- **Help page** (`/help`) — tabs: Overview, NDI, Video, Skins, OSC / MCP
+- Sidebar navigation entry
+
+### Documentation
+- [`docs/NDI.md`](docs/NDI.md) — planned network video pointer to mixxxxx primer
+- [`docs/STATUS.md`](docs/STATUS.md), [`docs/TODO.md`](docs/TODO.md) — project tracking
+- README quick links (NDI, Help)
+
+### Tools
+- `mixx_skin(create_video_skin)` — copy MixxxxxVideo from mixxxxx repo; patch `skin.xml` defaults (video on, spinnies off, 4 decks)
+
+### Integration
+- OSC bridge heartbeat via `/mixxxxx/ping` (requires mixxxxx with OSC MVP)
+
+---
+
+## 0.2.0 (2026-07-25)
+
+- Pre-commit ruff hooks; version bump
+- NSIS + MCPB release pipeline (see BUILD_LOG)
+
+---
+
 ## 0.1.0 (2026-07-22)
 
 - OSC bridge to Mixxx (python-osc, ports 11118/11119)

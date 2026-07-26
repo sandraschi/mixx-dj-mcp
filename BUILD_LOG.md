@@ -1,8 +1,33 @@
 # Build Log — mixx-dj-mcp
 
-## Build 2026-07-24-1 — NSIS installer
+## Build 2026-07-26-1 — Help page (docs pass, no release)
+
+**Status**: ✅ web_sota build OK (source only; dist gitignored)
+
+| Step | Result |
+|---|---|
+| `npm run build` in `web_sota` | Pass — Help.tsx, tsc + vite |
+| Commits | `64e8995` on `master` |
+
+**Notes:**
+- New route `/help` (NDI primer tab for users who never heard of NDI)
+- NSIS installer not rebuilt — run full `build-native` when cutting 0.2.1 release
+- Cross-repo docs: mixxxxx `e429e2aaf9` (NDI.md, SKINS.md, NOTES)
+
+---
+
+## Build 2026-07-24-1 — NSIS installer (v0.1.0)
 
 **Status**: ✅ SUCCESS
+
+## Build 2026-07-25-1 — NSIS + MCPB (v0.2.0)
+
+**Status**: ✅ SUCCESS
+
+**Artifacts**:
+- NSIS installer: `Mixx-DJ-MCP_0.2.0_x64-setup.exe` (115.5 MB)
+- MCPB bundle: `mixx-dj-mcp.mcpb` (15.2 KB)
+- Release: https://github.com/sandraschi/mixx-dj-mcp/releases/tag/v0.2.0
 
 ### Artifacts
 
