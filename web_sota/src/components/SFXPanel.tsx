@@ -1,9 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Volume2, Download, Loader2, AlertCircle, Music } from "lucide-react";
+import { downloadSfxSound, fetchSfxSearch, fetchSfxStatus } from "../lib/api";
 import type { SFXSound } from "../lib/types";
-
-const SFX_API = "http://127.0.0.1:11120";
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds.toFixed(1)}s`;
@@ -18,6 +17,17 @@ export default function SFXPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
+  const [sfxOnline, setSfxOnline] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  useEffect(() => {
+    fetchSfxStatus()
+      .then((s) => {
+        setSfxOnline(Boolean(s.available));
+        setHasApiKey(Boolean(s.has_api_key));
+      })
+      .catch(() => setSfxOnline(false));
+  }, []);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -28,23 +38,24 @@ export default function SFXPanel() {
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(
-        `${SFX_API}/api/sounds/search?q=${encodeURIComponent(q)}`,
-        { headers: { Accept: "application/json" } },
-      );
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = await r.json();
-      const items: SFXSound[] = (data.results || data.sounds || []).map(
-        (item: Record<string, unknown>) => ({
-          id: Number(item.id ?? 0),
-          name: String(item.name ?? item.title ?? "Untitled"),
-          duration: Number(item.duration ?? 0),
-          tags: Array.isArray(item.tags) ? (item.tags as string[]) : [],
-          preview_url: String(item.preview_url ?? item.url ?? ""),
-          license: String(item.license ?? "Unknown"),
-        }),
-      );
+      const data = await fetchSfxSearch(q.trim());
+      if (!data.sfx_available) {
+        setError("sfx-mcp offline — start on port 11120");
+        setResults([]);
+        return;
+      }
+      const items: SFXSound[] = (data.results || []).map((item) => ({
+        id: Number(item.id ?? 0),
+        name: String(item.name ?? "Untitled"),
+        duration: Number(item.duration ?? 0),
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        preview_url: String(item.preview_url ?? ""),
+        license: String(item.license ?? "CC0"),
+      }));
       setResults(items);
+      if (data.message && items.length === 0) {
+        setError(data.message);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Search failed");
       setResults([]);
@@ -77,18 +88,18 @@ export default function SFXPanel() {
   );
 
   const handleDownload = useCallback(async (sound: SFXSound) => {
-    if (!sound.preview_url) return;
     try {
-      const r = await fetch(sound.preview_url);
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${sound.name.replace(/[^a-zA-Z0-9_-]/g, "_")}.wav`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      // download failed silently
+      const result = await downloadSfxSound(sound.id);
+      if (!result.success) {
+        setError(result.message || "Download failed");
+        return;
+      }
+      const filePath = result.data?.file_path;
+      if (typeof filePath === "string" && filePath) {
+        setError(null);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Download failed");
     }
   }, []);
 
@@ -99,8 +110,9 @@ export default function SFXPanel() {
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800">
         <Music size={16} className="text-amber-400 shrink-0" />
-        <span className="text-sm font-semibold text-slate-200">
-          SFX Browser
+        <span className="text-sm font-semibold text-slate-200">SFX Browser</span>
+        <span className="text-xs text-slate-500 ml-auto">
+          {sfxOnline ? (hasApiKey ? "sfx-mcp · CC0" : "no API key") : "offline"}
         </span>
       </div>
 
@@ -136,15 +148,11 @@ export default function SFXPanel() {
         )}
 
         {!loading && !error && results.length === 0 && query && (
-          <p className="text-xs text-slate-500 text-center py-8">
-            No sounds found
-          </p>
+          <p className="text-xs text-slate-500 text-center py-8">No sounds found</p>
         )}
 
         {!loading && !error && results.length === 0 && !query && (
-          <p className="text-xs text-slate-600 text-center py-8">
-            Search for sound effects
-          </p>
+          <p className="text-xs text-slate-600 text-center py-8">Search FreeSound via sfx-mcp</p>
         )}
 
         <AnimatePresence initial={false}>
@@ -157,12 +165,10 @@ export default function SFXPanel() {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800/30 hover:bg-slate-800/60 transition-colors group"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200 truncate">
-                  {sound.name}
-                </p>
+                <p className="text-sm font-medium text-slate-200 truncate">{sound.name}</p>
                 <p className="text-[11px] text-slate-500">
                   {sound.license}
-                  {sound.duration > 0 && ` \u00b7 ${formatDuration(sound.duration)}`}
+                  {sound.duration > 0 && ` · ${formatDuration(sound.duration)}`}
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -179,15 +185,13 @@ export default function SFXPanel() {
                     <Volume2 size={14} />
                   </button>
                 )}
-                {sound.preview_url && (
-                  <button
-                    onClick={() => handleDownload(sound)}
-                    title="Download"
-                    className="p-1.5 rounded-md text-slate-500 hover:text-amber-400 hover:bg-slate-700/50 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Download size={14} />
-                  </button>
-                )}
+                <button
+                  onClick={() => handleDownload(sound)}
+                  title="Download to sfx cache"
+                  className="p-1.5 rounded-md text-slate-500 hover:text-amber-400 hover:bg-slate-700/50 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Download size={14} />
+                </button>
               </div>
             </motion.div>
           ))}

@@ -74,6 +74,30 @@ def _tags_from_item(item: dict[str, Any]) -> list[str]:
     return tags
 
 
+def _pick_thumb_path(item: dict[str, Any]) -> str | None:
+    for key in ("grandparentThumb", "parentThumb", "thumb", "composite"):
+        value = item.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def _pick_poster_path(item: dict[str, Any]) -> str | None:
+    for key in ("art", "thumb", "parentThumb", "grandparentThumb"):
+        value = item.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def artwork_proxy_url(path: str | None, *, width: int = 128, height: int = 128) -> str | None:
+    """Same-origin proxy URL served by mixx-dj-mcp (avoids cross-port CORS)."""
+    if not path:
+        return None
+    clean = str(path).lstrip("/")
+    return f"/api/library/artwork/plex?path={clean}&width={width}&height={height}"
+
+
 def map_plex_item(item: dict[str, Any], *, score: float | None = None) -> dict[str, Any]:
     rating_key = str(item.get("rating_key") or item.get("id") or "")
     duration_min = item.get("duration")
@@ -91,6 +115,16 @@ def map_plex_item(item: dict[str, Any], *, score: float | None = None) -> dict[s
     file_path = item.get("file") or item.get("path")
     track_id = str(file_path) if file_path else f"plex:{rating_key}"
 
+    media_type = str(item.get("type") or "")
+    thumb_path = _pick_thumb_path(item)
+    poster_path = _pick_poster_path(item)
+    cover_url = artwork_proxy_url(thumb_path)
+    poster_url = artwork_proxy_url(poster_path, width=200, height=300)
+    if media_type in ("movie", "show", "season", "episode"):
+        display_art = poster_url or cover_url
+    else:
+        display_art = cover_url or poster_url
+
     return {
         "id": track_id,
         "title": str(item.get("title") or "Unknown"),
@@ -101,13 +135,18 @@ def map_plex_item(item: dict[str, Any], *, score: float | None = None) -> dict[s
         "source": "plex",
         "rating_key": rating_key,
         "year": item.get("year"),
-        "type": item.get("type"),
+        "type": media_type or item.get("type"),
         "genres": item.get("genres") or [],
         "collections": item.get("collections") or [],
         "tags": _tags_from_item(item),
         "summary": item.get("summary") or "",
         "score": score,
         "loadable": bool(file_path) or bool(rating_key),
+        "thumb": thumb_path,
+        "art": poster_path,
+        "cover_url": cover_url,
+        "poster_url": poster_url,
+        "artwork_url": display_art,
     }
 
 
@@ -208,6 +247,7 @@ async def semantic_search(
         if not isinstance(meta, dict):
             meta = {}
         item = {
+            "rating_key": str(meta.get("rating_key") or meta.get("id") or ""),
             "id": str(meta.get("rating_key") or meta.get("id") or ""),
             "title": meta.get("title") or meta.get("name") or "Unknown",
             "type": meta.get("type"),
@@ -215,6 +255,10 @@ async def semantic_search(
             "summary": hit.get("content") or meta.get("summary") or "",
             "genres": meta.get("genres") or [],
             "collections": meta.get("collections") or [],
+            "thumb": meta.get("thumb"),
+            "art": meta.get("art"),
+            "parentThumb": meta.get("parentThumb"),
+            "grandparentThumb": meta.get("grandparentThumb"),
         }
         mapped = map_plex_item(item, score=float(hit.get("score") or 0.0))
         results.append(mapped)

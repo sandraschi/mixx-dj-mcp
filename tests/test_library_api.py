@@ -74,6 +74,9 @@ async def test_search_library_smart_uses_plex_when_available():
                 "key": "Unknown",
                 "length": "3:30",
                 "source": "plex",
+                "rating_key": "123",
+                "thumb": "/library/metadata/1/thumb/abc",
+                "type": "track",
             }
         ],
         "total": 1,
@@ -91,6 +94,26 @@ async def test_search_library_smart_uses_plex_when_available():
     assert result["total"] == 1
     assert result["engine"] == "plex_keyword"
     assert result["results"][0]["source"] == "plex"
+    assert (
+        result["results"][0]["cover_url"]
+        == "/api/library/artwork/plex?path=library/metadata/1/thumb/abc&width=128&height=128"
+    )
+
+
+def test_map_plex_item_movie_poster():
+    from mixx_dj_mcp.plex_client import map_plex_item
+
+    mapped = map_plex_item(
+        {
+            "rating_key": "999",
+            "title": "Blade Runner",
+            "type": "movie",
+            "thumb": "/library/metadata/2/thumb/1",
+            "art": "/library/metadata/2/art/1",
+        }
+    )
+    assert mapped["poster_url"] == "/api/library/artwork/plex?path=library/metadata/2/art/1&width=200&height=300"
+    assert mapped["artwork_url"] == mapped["poster_url"]
 
 
 @pytest.mark.asyncio

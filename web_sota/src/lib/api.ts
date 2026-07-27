@@ -75,8 +75,9 @@ export interface LibraryItem {
   bpm: number;
   key: string;
   length: string;
-  source?: "plex" | "mixxx";
+  source?: "plex" | "mixxx" | "calibre";
   rating_key?: string;
+  book_id?: number;
   year?: number | null;
   type?: string;
   genres?: string[];
@@ -85,6 +86,16 @@ export interface LibraryItem {
   summary?: string;
   score?: number;
   loadable?: boolean;
+  cover_url?: string | null;
+  poster_url?: string | null;
+  artwork_url?: string | null;
+}
+
+export function libraryArtworkUrl(item: Pick<LibraryItem, "artwork_url" | "cover_url" | "poster_url">): string | null {
+  const raw = item.artwork_url || item.cover_url || item.poster_url;
+  if (!raw) return null;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  return `${API_BASE}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 
 export interface LibrarySearchFilters {
@@ -214,6 +225,39 @@ export function fetchNowPlaying(): Promise<NowPlayingResponse> {
 
 export function fetchFleetSources(): Promise<{ sources: Record<string, unknown> }> {
   return apiGet<{ sources: Record<string, unknown> }>("/api/v1/fleet/sources");
+}
+
+export interface SFXSearchResponse {
+  results: import("./types").SFXSound[];
+  total: number;
+  message?: string;
+  sfx_available?: boolean;
+  has_more?: boolean;
+}
+
+export interface SFXStatusResponse {
+  available: boolean;
+  has_api_key: boolean;
+  server: string;
+}
+
+export function fetchSfxStatus(): Promise<SFXStatusResponse> {
+  return apiGet<SFXStatusResponse>("/api/sfx/status");
+}
+
+export function fetchSfxSearch(
+  query: string,
+  opts?: { duration_max?: number; page?: number; tag?: string }
+): Promise<SFXSearchResponse> {
+  const params = new URLSearchParams({ q: query });
+  if (opts?.duration_max) params.set("duration_max", String(opts.duration_max));
+  if (opts?.page) params.set("page", String(opts.page));
+  if (opts?.tag) params.set("tag", opts.tag);
+  return apiGet<SFXSearchResponse>(`/api/sfx/search?${params.toString()}`);
+}
+
+export function downloadSfxSound(soundId: number): Promise<{ success: boolean; message?: string; data?: Record<string, unknown> }> {
+  return apiPost("/api/sfx/download", { sound_id: soundId });
 }
 
 export function fetchSkills(): Promise<string[]> {

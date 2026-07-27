@@ -5,6 +5,7 @@ import {
   API_BASE,
   fetchLibrarySearch,
   fetchPlexLibraries,
+  libraryArtworkUrl,
   type LibraryItem,
   type LibrarySearchFilters,
   type PlexLibrary,
@@ -263,14 +264,28 @@ export default function Library() {
       )}
 
       <div className="space-y-1">
-        {results.map((track) => (
+        {results.map((track) => {
+          const art = libraryArtworkUrl(track);
+          return (
           <motion.div
             key={`${track.source || "x"}-${track.id}`}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-colors group"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <Disc3 size={16} className="text-slate-600 shrink-0" />
+            {art ? (
+              <img
+                src={art}
+                alt=""
+                className="w-10 h-10 rounded object-cover shrink-0 bg-slate-800 border border-slate-700"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <Disc3 size={16} className="text-slate-600 shrink-0" />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm text-slate-200 truncate">{track.title}</p>
               <p className="text-sm text-slate-400 truncate">{track.artist}</p>
@@ -305,7 +320,8 @@ export default function Library() {
               )}
             </button>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

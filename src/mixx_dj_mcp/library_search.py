@@ -44,6 +44,35 @@ def _dedupe_results(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return unique
 
 
+async def _enrich_missing_artwork(results: list[dict[str, Any]], plex_url: str, *, max_fetch: int = 10) -> None:
+    """Fill cover/poster URLs from Plex media detail when search payloads omit thumbs."""
+    fetched = 0
+    for row in results:
+        if fetched >= max_fetch:
+            break
+        if row.get("artwork_url") or row.get("source") != "plex":
+            continue
+        if row.get("thumb") or row.get("art") or row.get("parentThumb") or row.get("grandparentThumb"):
+            merged = plex_client.map_plex_item(row)
+            for key in ("cover_url", "poster_url", "artwork_url", "thumb", "art"):
+                if merged.get(key):
+                    row[key] = merged[key]
+            continue
+        rating_key = row.get("rating_key") or (
+            str(row.get("id", "")).removeprefix("plex:") if str(row.get("id", "")).startswith("plex:") else None
+        )
+        if not rating_key:
+            continue
+        detail = await plex_client.get_media_detail(str(rating_key), plex_url)
+        if not detail:
+            continue
+        merged = plex_client.map_plex_item({**detail, "rating_key": rating_key})
+        for key in ("cover_url", "poster_url", "artwork_url", "thumb", "art"):
+            if merged.get(key):
+                row[key] = merged[key]
+        fetched += 1
+
+
 async def search_library_smart(
     query: str,
     *,
@@ -113,6 +142,9 @@ async def search_library_smart(
                 message = payload["message"]
         except Exception as exc:
             message = f"Plex search failed: {exc}"
+
+    if results:
+        await _enrich_missing_artwork(results, plex_url)
 
     mixxx_payload: dict[str, Any] | None = None
     if include_mixxx and (mode in ("auto", "mixxx") or not results):

@@ -21,6 +21,8 @@ Last updated: 2026-07-27. Companion to [mixxxxx](https://github.com/sandraschi/m
 | **Library** | Works | Plex via `plex-mcp` (keyword, advanced filters, semantic) + Mixxx SQLite fallback |
 | `/api/library/plex/libraries` | Works | Plex library picker for filters |
 | `/api/library/resolve` | Works | Resolves `plex:rating_key` → local file for deck load |
+| **SFX (Cockpit)** | Works | `/api/sfx/search` → sfx-mcp FreeSound; download via `/api/sfx/download` |
+| `/api/sfx/status` | Works | sfx-mcp health + FreeSound API key |
 | **Effects** | Works | `POST /api/v1/effects` → `mixx_effects` OSC |
 | **Help** (`/help`) | Works (source) | Overview, **NDI**, Video, Skins, OSC tabs |
 | `/api/v1/tools/call` | Works | Generic MCP tool bridge (Skins install, DAW sync, …) |

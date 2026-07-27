@@ -8,6 +8,7 @@ from pathlib import Path
 import httpx
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastmcp import FastMCP
 from pydantic import BaseModel
 from rich.console import Console
@@ -97,7 +98,10 @@ def get_tool_count() -> int:
     return _registered_tool_count
 
 
-from . import plex_client  # noqa: E402
+from . import (  # noqa: E402
+    plex_client,
+    sfx_client,
+)
 from .library_search import search_library_smart  # noqa: E402
 from .tool_dispatch import build_tool_dispatch, dispatch_tool  # noqa: E402
 from .tools import register_all_tools  # noqa: E402
@@ -243,6 +247,130 @@ async def library_resolve(req: LibraryResolveRequest):
     if not path:
         return {"success": False, "message": "Could not resolve track path", "path": None}
     return {"success": True, "path": path, "track_ref": req.track_ref}
+
+
+@fastapi_app.get("/api/library/artwork/plex")
+async def library_artwork_plex(path: str, width: int = 128, height: int = 128):
+    """Proxy Plex thumb/poster art through mixx-dj-mcp (same-origin for the webapp)."""
+    clean = path.lstrip("/")
+    upstream = f"{config.plex_mcp_url.rstrip('/')}/api/image/{clean}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(upstream, params={"width": width, "height": height})
+            response.raise_for_status()
+            return Response(
+                content=response.content,
+                media_type=response.headers.get("content-type", "image/jpeg"),
+            )
+    except Exception as exc:
+        logger.warning("Plex artwork proxy failed for %s: %s", clean, exc)
+        return Response(status_code=404)
+
+
+@fastapi_app.get("/api/library/artwork/calibre/{book_id}")
+async def library_artwork_calibre(book_id: int):
+    """Proxy Calibre book cover through mixx-dj-mcp."""
+    calibre_url = os.getenv("CALIBRE_MCP_URL", "http://127.0.0.1:10720").rstrip("/")
+    upstream = f"{calibre_url}/api/books/{book_id}/cover"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(upstream)
+            response.raise_for_status()
+            return Response(
+                content=response.content,
+                media_type=response.headers.get("content-type", "image/jpeg"),
+            )
+    except Exception as exc:
+        logger.warning("Calibre cover proxy failed for book %s: %s", book_id, exc)
+        return Response(status_code=404)
+
+
+def _register_sfx_fleet_source() -> None:
+    if sfx_client.get_sfx_mcp_url():
+        _audio_sources["sfx"] = {
+            "name": "sfx",
+            "base_url": config.sfx_mcp_url,
+            "capabilities": ["search", "download", "preview", "list_local"],
+            "registered_at": time.time(),
+            "status": "online",
+        }
+
+
+@fastapi_app.get("/api/sfx/status")
+async def sfx_status():
+    """sfx-mcp connectivity and FreeSound API key status."""
+    status = await sfx_client.sfx_status(config.sfx_mcp_url)
+    if status.get("available"):
+        _register_sfx_fleet_source()
+    return status
+
+
+@fastapi_app.get("/api/sfx/search")
+async def sfx_search_route(
+    q: str,
+    duration_max: int = 30,
+    page: int = 1,
+    tag: str | None = None,
+):
+    """Search FreeSound via sfx-mcp."""
+    if not await sfx_client.sfx_available(config.sfx_mcp_url):
+        return {
+            "results": [],
+            "total": 0,
+            "message": "sfx-mcp offline — start on port 11120",
+            "sfx_available": False,
+        }
+    try:
+        payload = await sfx_client.search_sounds(
+            q,
+            duration_max=duration_max,
+            page=page,
+            tag=tag,
+            base_url=config.sfx_mcp_url,
+        )
+        _register_sfx_fleet_source()
+        return {
+            **payload,
+            "sfx_available": True,
+        }
+    except Exception as exc:
+        logger.warning("SFX search failed: %s", exc)
+        return {
+            "results": [],
+            "total": 0,
+            "message": str(exc),
+            "sfx_available": True,
+        }
+
+
+@fastapi_app.post("/api/sfx/download")
+async def sfx_download_route(body: dict):
+    """Download a sound through sfx-mcp to local cache."""
+    sound_id = body.get("sound_id")
+    if not sound_id:
+        return {"success": False, "message": "sound_id required"}
+    try:
+        result = await sfx_client.download_sound(
+            int(sound_id),
+            destination=body.get("destination"),
+            base_url=config.sfx_mcp_url,
+        )
+        _register_sfx_fleet_source()
+        return result
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+
+
+@fastapi_app.get("/api/sfx/local")
+async def sfx_local_route(tag: str | None = None):
+    """List locally cached sfx-mcp sounds."""
+    if not await sfx_client.sfx_available(config.sfx_mcp_url):
+        return {"results": [], "total": 0, "sfx_available": False}
+    try:
+        payload = await sfx_client.list_local_sounds(tag=tag, base_url=config.sfx_mcp_url)
+        return {**payload, "sfx_available": True}
+    except Exception as exc:
+        return {"results": [], "total": 0, "message": str(exc), "sfx_available": True}
 
 
 @fastapi_app.post("/api/v1/tools/call")
