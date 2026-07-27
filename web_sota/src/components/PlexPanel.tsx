@@ -29,12 +29,12 @@ export default function PlexPanel() {
     setError(null);
     try {
       const r = await fetch(
-        `${PLEX_API}/api/library/search?query=${encodeURIComponent(q)}`,
+        `${PLEX_API}/api/search/?query=${encodeURIComponent(q)}&limit=30`,
         { headers: { Accept: "application/json" } },
       );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
-      const items: PlexMediaItem[] = (data.results || data.media || []).map(
+      const items: PlexMediaItem[] = (data.data || []).map(
         (item: Record<string, unknown>) => ({
           id: String(item.id ?? item.rating_key ?? ""),
           title: String(item.title ?? "Untitled"),

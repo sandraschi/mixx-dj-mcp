@@ -18,7 +18,9 @@ Last updated: 2026-07-27. Companion to [mixxxxx](https://github.com/sandraschi/m
 | Page | Status | Note |
 |---|---|---|
 | Cockpit, Decks, Chat, Tools, Settings | Works | SOTA React 19 stack |
-| **Library** | Works | `POST /api/library/search` queries local `mixxxdb.sqlite` |
+| **Library** | Works | Plex via `plex-mcp` (keyword, advanced filters, semantic) + Mixxx SQLite fallback |
+| `/api/library/plex/libraries` | Works | Plex library picker for filters |
+| `/api/library/resolve` | Works | Resolves `plex:rating_key` → local file for deck load |
 | **Effects** | Works | `POST /api/v1/effects` → `mixx_effects` OSC |
 | **Help** (`/help`) | Works (source) | Overview, **NDI**, Video, Skins, OSC tabs |
 | `/api/v1/tools/call` | Works | Generic MCP tool bridge (Skins install, DAW sync, …) |

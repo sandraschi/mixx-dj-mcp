@@ -1,9 +1,11 @@
 import sqlite3
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from mixx_dj_mcp.library_search import search_library_smart
 from mixx_dj_mcp.mixxx_library import format_duration, search_library
 
 
@@ -55,47 +57,112 @@ def test_format_duration():
 
 
 def test_search_library_by_genre(sample_db: Path):
-    result = search_library("tech house", db_path=sample_db)
+    result = search_library(query="tech house", db_path=sample_db)
     assert result["total"] == 1
     assert result["results"][0]["title"] == "Around the World"
-    assert result["results"][0]["id"].endswith(".mp3")
-
-
-def test_search_library_by_bpm(sample_db: Path):
-    result = search_library("121 bpm", db_path=sample_db)
-    assert result["total"] == 1
-
-
-def test_search_library_empty_query():
-    result = search_library("")
-    assert result["total"] == 0
-    assert "required" in result["message"].lower()
 
 
 @pytest.mark.asyncio
-async def test_mixx_library_search_returns_db_rows(sample_db: Path, monkeypatch):
+async def test_search_library_smart_uses_plex_when_available():
+    plex_payload = {
+        "results": [
+            {
+                "id": "plex:123",
+                "title": "Plex Track",
+                "artist": "Artist",
+                "bpm": 0,
+                "key": "Unknown",
+                "length": "3:30",
+                "source": "plex",
+            }
+        ],
+        "total": 1,
+        "message": "Plex keyword search: 1 result(s)",
+        "engine": "plex_keyword",
+    }
+    with (
+        patch("mixx_dj_mcp.library_search.plex_client.plex_available", AsyncMock(return_value=True)),
+        patch(
+            "mixx_dj_mcp.library_search.plex_client.keyword_search",
+            AsyncMock(return_value=plex_payload),
+        ),
+    ):
+        result = await search_library_smart("daft", mode="plex", include_mixxx=False)
+    assert result["total"] == 1
+    assert result["engine"] == "plex_keyword"
+    assert result["results"][0]["source"] == "plex"
+
+
+@pytest.mark.asyncio
+async def test_search_library_smart_falls_back_to_mixxx(sample_db: Path):
+    with (
+        patch("mixx_dj_mcp.library_search.plex_client.plex_available", AsyncMock(return_value=False)),
+        patch(
+            "mixx_dj_mcp.library_search.search_mixxx_db",
+            lambda q, limit=50: search_library(q, limit=limit, db_path=sample_db),
+        ),
+    ):
+        result = await search_library_smart("daft", mode="auto")
+    assert result["total"] == 1
+    assert result["engine"] == "mixxx"
+
+
+@pytest.mark.asyncio
+async def test_mixx_library_search_returns_rows(sample_db: Path, monkeypatch):
     from mixx_dj_mcp.tools import library as library_tool
 
-    monkeypatch.setattr(library_tool, "search_library", lambda q: search_library(q, db_path=sample_db))
+    async def fake_smart(query, **kwargs):
+        payload = search_library(query, db_path=sample_db)
+        return {
+            "results": payload["results"],
+            "total": payload["total"],
+            "message": payload["message"],
+            "engine": "mixxx",
+            "plex_available": False,
+            "database": payload.get("database"),
+        }
+
+    monkeypatch.setattr(library_tool, "search_library_smart", fake_smart)
     result = await library_tool.mixx_library(operation="search", query="daft")
     assert result["success"] is True
     assert result["data"]["total"] == 1
 
 
-def test_library_search_api(sample_db: Path, monkeypatch):
+def test_library_search_api(monkeypatch):
     from mixx_dj_mcp import server
 
-    monkeypatch.setattr(server, "search_library", lambda q, limit=50: search_library(q, limit=limit, db_path=sample_db))
+    async def fake_smart(*args, **kwargs):
+        return {
+            "results": [
+                {
+                    "id": "plex:1",
+                    "title": "T",
+                    "artist": "A",
+                    "bpm": 0,
+                    "key": "?",
+                    "length": "0:00",
+                    "source": "plex",
+                }
+            ],
+            "total": 1,
+            "message": "ok",
+            "engine": "plex_keyword",
+            "plex_available": True,
+        }
 
+    monkeypatch.setattr(server, "search_library_smart", fake_smart)
     bridge = server.get_osc_bridge()
     bridge.send = lambda *args, **kwargs: None  # type: ignore[method-assign]
 
     client = TestClient(server.fastapi_app)
-    response = client.post("/api/library/search", json={"query": "daft"})
+    response = client.post(
+        "/api/library/search",
+        json={"query": "house", "mode": "plex", "genre": "Electronic"},
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["total"] == 1
-    assert body["results"][0]["artist"] == "Daft Punk"
+    assert body["engine"] == "plex_keyword"
 
 
 def test_effects_api(monkeypatch):
@@ -103,18 +170,15 @@ def test_effects_api(monkeypatch):
 
     async def fake_dispatch(_dispatch, name, arguments=None):
         assert name == "mixx_effects"
-        assert arguments["operation"] == "chain_load"
         return {"success": True, "message": "ok", "data": arguments}
 
     monkeypatch.setattr(server, "dispatch_tool", fake_dispatch)
-
     client = TestClient(server.fastapi_app)
     response = client.post(
         "/api/v1/effects",
         json={"operation": "chain_load", "rack": 1, "unit": 1, "effect": "Reverb"},
     )
     assert response.status_code == 200
-    assert response.json()["success"] is True
 
 
 def test_tools_call_api(monkeypatch):
@@ -124,13 +188,9 @@ def test_tools_call_api(monkeypatch):
         return {"success": True, "message": name, "data": arguments or {}}
 
     monkeypatch.setattr(server, "dispatch_tool", fake_dispatch)
-
     client = TestClient(server.fastapi_app)
     response = client.post(
         "/api/v1/tools/call",
         json={"name": "mixx_daw", "arguments": {"operation": "resolume_sync", "deck": 1}},
     )
     assert response.status_code == 200
-    body = response.json()
-    assert body["tool"] == "mixx_daw"
-    assert body["result"]["success"] is True

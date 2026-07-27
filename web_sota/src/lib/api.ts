@@ -75,6 +75,36 @@ export interface LibraryItem {
   bpm: number;
   key: string;
   length: string;
+  source?: "plex" | "mixxx";
+  rating_key?: string;
+  year?: number | null;
+  type?: string;
+  genres?: string[];
+  collections?: string[];
+  tags?: string[];
+  summary?: string;
+  score?: number;
+  loadable?: boolean;
+}
+
+export interface LibrarySearchFilters {
+  query?: string;
+  limit?: number;
+  mode?: "auto" | "plex" | "mixxx" | "semantic";
+  include_mixxx?: boolean;
+  library_id?: string;
+  media_type?: string;
+  genre?: string;
+  year?: number;
+  min_year?: number;
+  max_year?: number;
+  collection?: string;
+}
+
+export interface PlexLibrary {
+  id: string;
+  title: string;
+  type: string;
 }
 
 export interface LibrarySearchResponse {
@@ -82,6 +112,13 @@ export interface LibrarySearchResponse {
   total: number;
   message?: string;
   database?: string | null;
+  engine?: string | null;
+  plex_available?: boolean;
+}
+
+export interface PlexLibrariesResponse {
+  libraries: PlexLibrary[];
+  plex_available: boolean;
 }
 
 export interface EffectsResponse {
@@ -108,10 +145,18 @@ export function fetchDeckStatus(): Promise<DeckStatusResponse> {
   return apiGet<DeckStatusResponse>("/api/deck/status");
 }
 
-export function fetchLibraryQuery(
-  query: string
+export function fetchLibrarySearch(
+  filters: LibrarySearchFilters
 ): Promise<LibrarySearchResponse> {
-  return apiPost<LibrarySearchResponse>("/api/library/search", { query });
+  return apiPost<LibrarySearchResponse>("/api/library/search", filters);
+}
+
+export function fetchLibraryQuery(query: string): Promise<LibrarySearchResponse> {
+  return fetchLibrarySearch({ query, mode: "auto" });
+}
+
+export function fetchPlexLibraries(): Promise<PlexLibrariesResponse> {
+  return apiGet<PlexLibrariesResponse>("/api/library/plex/libraries");
 }
 
 export function callEffects(

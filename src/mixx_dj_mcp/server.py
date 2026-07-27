@@ -32,8 +32,23 @@ class CueRequest(BaseModel):
 
 
 class LibrarySearchRequest(BaseModel):
-    query: str
+    query: str = ""
     limit: int = 50
+    mode: str = "auto"  # auto | plex | mixxx | semantic
+    include_mixxx: bool = True
+    library_id: str | None = None
+    media_type: str | None = None
+    genre: str | None = None
+    year: int | None = None
+    min_year: int | None = None
+    max_year: int | None = None
+    collection: str | None = None
+    actor: str | None = None
+    director: str | None = None
+
+
+class LibraryResolveRequest(BaseModel):
+    track_ref: str
 
 
 class ToolCallRequest(BaseModel):
@@ -82,7 +97,8 @@ def get_tool_count() -> int:
     return _registered_tool_count
 
 
-from .mixxx_library import search_library  # noqa: E402
+from . import plex_client  # noqa: E402
+from .library_search import search_library_smart  # noqa: E402
 from .tool_dispatch import build_tool_dispatch, dispatch_tool  # noqa: E402
 from .tools import register_all_tools  # noqa: E402
 
@@ -172,22 +188,61 @@ async def deck_status():
     return {"decks": decks, "crossfader": bridge.get_global_state("crossfader", 0.0)}
 
 
+@fastapi_app.get("/api/library/plex/libraries")
+async def library_plex_libraries():
+    """List Plex libraries from plex-mcp (for filter dropdowns)."""
+    if not await plex_client.plex_available(config.plex_mcp_url):
+        return {"libraries": [], "plex_available": False}
+    libraries = await plex_client.list_libraries(config.plex_mcp_url)
+    return {"libraries": libraries, "plex_available": True}
+
+
 @fastapi_app.post("/api/library/search")
 async def library_search(req: LibrarySearchRequest):
-    """Search the local Mixxx SQLite library and mirror query to Mixxx OSC."""
+    """Search via plex-mcp (filters, metadata, semantic) with Mixxx SQLite fallback."""
     query = req.query.strip()
-    if not query:
-        return {"results": [], "total": 0, "message": "query required"}
+    if not query and not any(
+        [
+            req.genre,
+            req.year,
+            req.library_id,
+            req.collection,
+            req.actor,
+            req.director,
+        ]
+    ):
+        return {"results": [], "total": 0, "message": "query or filters required"}
 
-    result = search_library(query, limit=req.limit)
-    bridge = get_osc_bridge()
-    bridge.send("/library/search", query)
-    return {
-        "results": result["results"],
-        "total": result["total"],
-        "message": result["message"],
-        "database": result.get("database"),
-    }
+    result = await search_library_smart(
+        query,
+        limit=req.limit,
+        mode=req.mode if req.mode in ("auto", "plex", "mixxx", "semantic") else "auto",
+        include_mixxx=req.include_mixxx,
+        library_id=req.library_id,
+        media_type=req.media_type,
+        genre=req.genre,
+        year=req.year,
+        min_year=req.min_year,
+        max_year=req.max_year,
+        collection=req.collection,
+        actor=req.actor,
+        director=req.director,
+    )
+
+    if query:
+        bridge = get_osc_bridge()
+        bridge.send("/library/search", query)
+
+    return result
+
+
+@fastapi_app.post("/api/library/resolve")
+async def library_resolve(req: LibraryResolveRequest):
+    """Resolve plex:rating_key to a local file path for deck load."""
+    path = await plex_client.resolve_file_path(req.track_ref, config.plex_mcp_url)
+    if not path:
+        return {"success": False, "message": "Could not resolve track path", "path": None}
+    return {"success": True, "path": path, "track_ref": req.track_ref}
 
 
 @fastapi_app.post("/api/v1/tools/call")
@@ -392,8 +447,11 @@ async def api_settings():
 @fastapi_app.post("/api/v1/deck/{deck_id}/load")
 async def deck_load(deck_id: int, req: DeckLoadRequest):
     bridge = get_osc_bridge()
-    bridge.send(f"/deck/{deck_id}/LoadTrack", req.track_path)
-    return {"success": True, "deck": deck_id, "track": req.track_path}
+    track_path = await plex_client.resolve_file_path(req.track_path, config.plex_mcp_url)
+    if not track_path:
+        return {"success": False, "deck": deck_id, "message": "Could not resolve track path", "track": req.track_path}
+    bridge.send(f"/deck/{deck_id}/LoadTrack", track_path)
+    return {"success": True, "deck": deck_id, "track": track_path}
 
 
 @fastapi_app.post("/api/v1/deck/{deck_id}/play_pause")

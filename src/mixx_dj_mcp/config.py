@@ -11,6 +11,7 @@ class MixxConfig:
     http_port: int = 11116
     mcp_name: str = "Mixx-DJ-MCP"
     telemetry_enabled: bool = True
+    plex_mcp_url: str = "http://127.0.0.1:10740"
 
     @classmethod
     def from_env(cls) -> "MixxConfig":
@@ -22,4 +23,5 @@ class MixxConfig:
             http_port=int(os.getenv("HTTP_PORT", "11116")),
             mcp_name=os.getenv("MCP_NAME", "Mixx-DJ-MCP"),
             telemetry_enabled=os.getenv("TELEMETRY_ENABLED", "true").lower() in ("1", "true", "yes"),
+            plex_mcp_url=os.getenv("PLEX_MCP_URL", "http://127.0.0.1:10740"),
         )
