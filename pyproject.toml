@@ -52,11 +52,11 @@ Source = "https://github.com/sandraschi/mixx-dj-mcp"
 mixx-dj-mcp = "mixx_dj_mcp.__main__:main"
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
+dev = ["pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=5.0.0",
     "mypy>=1.10.0",
+    "ruff>=0.16.0,<0.17"
 ]
 vinyl = [
     "pytesseract>=0.3.10",

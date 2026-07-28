@@ -1,6 +1,6 @@
 # mixx-dj-mcp Agent Context
 
-Fleet MCP server for Mixxx DJ control via OSC.
+Fleet MCP server for Mixxx DJ control via OSC. **Chat abbreviation: mdm**
 See `justfile` for available recipes.
 
 ## Quick Ref
@@ -32,6 +32,7 @@ See `justfile` for available recipes.
 | `src/mixx_dj_mcp/tools/transitions.py` | `mixx_transition` AI transitions |
 | `src/mixx_dj_mcp/tools/vinyl.py` | `mixx_vinyl` vinyl control |
 | `src/mixx_dj_mcp/tools/skin_manager.py` | `mixx_skin` skin management |
+| `src/mixx_dj_mcp/skinmaker/` | QSS schemes, SVG recolor (see `docs/SKINMAKER.md`) |
 | `src/mixx_dj_mcp/tools/smart_crate.py` | `mixx_crate` LLM crate creation |
 | `src/mixx_dj_mcp/tools/set_sequencer.py` | `mixx_set` AI set sequencing |
 | `src/mixx_dj_mcp/tools/prefab_cards.py` | Prefab UI status cards |

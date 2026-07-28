@@ -113,6 +113,12 @@ class OscBridge:
         except Exception as e:
             logger.error("OSC send error to %s: %s", address, e)
 
+    def update_send_target(self, host: str, port: int) -> None:
+        """Point outbound OSC at Mixxx (after settings change)."""
+        self.config.mixx_host = host
+        self.config.mixx_osc_in_port = port
+        self._send_client = udp_client.SimpleUDPClient(host, port)
+
     def _run_server(self) -> None:
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)

@@ -23,12 +23,15 @@
 
   <br/>
   <sub>
+  <a href="docs/FIRST-RUN.md">First Run</a> ·
   <a href="docs/INSTALL.md">Install</a> ·
   <a href="docs/TOOLS.md">Tools</a> ·
   <a href="docs/STATUS.md">Status</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/MIXXX_VIDEO.md">Video</a> ·
+  <a href="docs/ORCHESTRATOR.md">AV Rig</a> ·
   <a href="docs/NDI.md">NDI</a> ·
+  <a href="docs/NDI-TARGETS.md">NDI Targets</a> ·
   <a href="docs/NOOB_GUIDE.md">Beginner Guide</a> ·
   <a href="docs/AI_TRANSITIONS.md">AI Transitions</a>
   </sub>
@@ -89,7 +92,8 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 | **Status & backlog** | [`docs/STATUS.md`](docs/STATUS.md) · [`docs/TODO.md`](docs/TODO.md) |
 | **Full tool reference** with parameters, returns, and examples | [`docs/TOOLS.md`](docs/TOOLS.md) |
 | **Using video** — requires the mixxxxx fork of Mixxx | [`docs/MIXXX_VIDEO.md`](docs/MIXXX_VIDEO.md) |
-| **NDI** (planned network video — primer) | [`docs/NDI.md`](docs/NDI.md) · webapp **Help → NDI** |
+| **AV orchestrator** (mixxxxx hub, NDI, Resolume, OBS) | [`docs/ORCHESTRATOR.md`](docs/ORCHESTRATOR.md) · webapp **Help → AV Rig** |
+| **NDI** (network video from mixxxxx) | [`docs/NDI.md`](docs/NDI.md) · [`docs/NDI-TARGETS.md`](docs/NDI-TARGETS.md) · webapp **Help → NDI** |
 | **Project status & backlog** | [`docs/STATUS.md`](docs/STATUS.md) · [`docs/TODO.md`](docs/TODO.md) |
 | **AI-powered transitions** between decks | [`docs/AI_TRANSITIONS.md`](docs/AI_TRANSITIONS.md) |
 | **Architecture** — how the OSC bridge, REST API, and webapp work | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |

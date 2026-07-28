@@ -10,6 +10,9 @@ import {
   type LibrarySearchFilters,
   type PlexLibrary,
 } from "../lib/api";
+import { useStore } from "../lib/store";
+import { FeatureNotice } from "../components/FeatureGate";
+import { featureEnabled } from "../lib/capabilities";
 
 const MODES = [
   { id: "auto", label: "Auto" },
@@ -19,6 +22,8 @@ const MODES = [
 ] as const;
 
 export default function Library() {
+  const engineCaps = useStore((s) => s.engineCaps);
+  const canLoadDeck = featureEnabled(engineCaps, "deck_load");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<(LibraryItem & { loading?: boolean })[]>([]);
   const [total, setTotal] = useState(0);
@@ -125,6 +130,7 @@ export default function Library() {
 
   return (
     <div data-testid="library-page" className="space-y-6">
+      <FeatureNotice caps={engineCaps} feature="deck_load" />
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl font-semibold text-slate-100">Library</h2>
@@ -308,7 +314,7 @@ export default function Library() {
             <button
               type="button"
               onClick={() => loadToDeck(track)}
-              disabled={track.loading}
+              disabled={track.loading || !canLoadDeck}
               className="px-3 py-1 text-sm font-medium rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all disabled:opacity-50"
             >
               {track.loading ? (

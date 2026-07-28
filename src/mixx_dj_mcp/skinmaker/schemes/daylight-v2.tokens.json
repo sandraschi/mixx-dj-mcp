@@ -1,0 +1,32 @@
+{
+  "name": "daylight-v2",
+  "description": "Outdoor-friendly Mixxxxx Video Daylight scheme (Mixxxxx fleet)",
+  "tokens": {
+    "skin_bg": "#e4e6eb",
+    "deck_bg": "#f2f3f5",
+    "chrome_well": "#eef0f4",
+    "waveform_well": "#e8eaef",
+    "waveform_highlight": "#dce0e6",
+    "border_light": "#c8ccd4",
+    "border_mid": "#b8bcc4",
+    "border_soft": "#d0d4dc",
+    "button_dim": "#e4e6eb",
+    "button_chrome": "#dce0e6",
+    "button_library": "#c8ccd4",
+    "meter_bg": "#2a2d35",
+    "scrim": "rgba(232, 234, 239, 200)"
+  },
+  "hex_replacements": {
+    "#151517": "#eef0f4",
+    "#19191a": "#e8eaef",
+    "#151515": "#dce0e6",
+    "#121213": "#e4e6eb",
+    "#171719": "#dce0e6",
+    "#2a2a2c": "#d0d4dc",
+    "#040404": "#2a2d35",
+    "#222": "#c8ccd4",
+    "#212123": "#c8ccd4",
+    "#0d0d0d": "#b8bcc4",
+    "#111": "#c0c4cc"
+  }
+}

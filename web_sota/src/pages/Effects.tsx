@@ -1,6 +1,9 @@
 import { useCallback, useState } from "react";
 import { Sparkles, Sliders, Loader2, Check, AlertCircle } from "lucide-react";
 import { callEffects } from "../lib/api";
+import { useStore } from "../lib/store";
+import FeatureGate, { FeatureNotice } from "../components/FeatureGate";
+import { featureEnabled } from "../lib/capabilities";
 
 const QUICK_ACTIONS = [
   {
@@ -31,6 +34,8 @@ const EFFECT_PRESETS = [
 ] as const;
 
 export default function Effects() {
+  const engineCaps = useStore((s) => s.engineCaps);
+  const oscOk = featureEnabled(engineCaps, "effects_racks");
   const [rack, setRack] = useState(1);
   const [unit, setUnit] = useState(1);
   const [effectName, setEffectName] = useState("Reverb");
@@ -99,6 +104,9 @@ export default function Effects() {
         </div>
       </div>
 
+      <FeatureNotice caps={engineCaps} feature="effects_racks" />
+
+      <FeatureGate caps={engineCaps} feature="effects_racks">
       {status && (
         <div
           className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
@@ -126,7 +134,7 @@ export default function Effects() {
             <button
               key={item.label}
               type="button"
-              disabled={busy}
+              disabled={busy || !oscOk}
               onClick={() => runEffect(item.payload)}
               className="px-3 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 hover:text-slate-100 hover:bg-slate-700 transition-colors border border-slate-700 disabled:opacity-50"
             >
@@ -177,7 +185,7 @@ export default function Effects() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !oscOk}
             onClick={() =>
               runEffect({
                 operation: "chain_load",
@@ -192,7 +200,7 @@ export default function Effects() {
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !oscOk}
             onClick={() => runEffect({ operation: "chain_clear", rack, unit })}
             className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50"
           >
@@ -200,7 +208,7 @@ export default function Effects() {
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !oscOk}
             onClick={() =>
               runEffect({ operation: "meta_set", rack, unit, value: meta })
             }
@@ -210,7 +218,7 @@ export default function Effects() {
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !oscOk}
             onClick={() =>
               runEffect({ operation: "effect_enable", rack, unit, enable: true })
             }
@@ -220,7 +228,7 @@ export default function Effects() {
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !oscOk}
             onClick={() =>
               runEffect({ operation: "effect_enable", rack, unit, enable: false })
             }
@@ -230,6 +238,7 @@ export default function Effects() {
           </button>
         </div>
       </div>
+      </FeatureGate>
     </div>
   );
 }

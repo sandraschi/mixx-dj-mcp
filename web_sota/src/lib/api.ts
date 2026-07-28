@@ -1,3 +1,5 @@
+import type { EngineCapabilities } from "./capabilities";
+
 const API_BASE = "http://127.0.0.1:11116";
 
 export async function apiGet<T = unknown>(path: string): Promise<T> {
@@ -37,6 +39,84 @@ export interface HealthResponse {
   uptime_seconds: number;
   tool_count: number;
   providers: Record<string, unknown>;
+  mixxx_process_running?: boolean;
+}
+
+export interface MixxxInstallation {
+  engine: string;
+  path: string;
+  exists: boolean;
+  source: string;
+}
+
+export interface MixxxStatusResponse {
+  process: { running: boolean; pid: number | null; exe: string | null };
+  osc: {
+    connected: boolean;
+    host: string;
+    in_port: number;
+    out_port: number;
+    setup_hint: string;
+  };
+  fork: { fork: string; connected: boolean; summary?: string; is_mixxxxx?: boolean; is_vanilla?: boolean };
+  capabilities?: EngineCapabilities;
+  installations: MixxxInstallation[];
+}
+
+export interface MixxxLaunchResponse {
+  success: boolean;
+  message: string;
+  pid?: number;
+  path?: string;
+  engine?: string;
+  already_running?: boolean;
+  osc_port_in?: number;
+  osc_port_out?: number;
+  osc_host_out?: string;
+}
+
+export interface OscPortStatus {
+  listen_port: number;
+  send_port: number;
+  host: string;
+  listen_port_free: boolean;
+  send_port_free: boolean;
+  ready: boolean;
+  clash_hint: string | null;
+}
+
+export interface FirstRunStep {
+  id: string;
+  label: string;
+  done: boolean;
+  hint: string | null;
+}
+
+export interface FirstRunStatus {
+  ready: boolean;
+  mixxxxx_installed: boolean;
+  mixxx_vanilla_installed: boolean;
+  preferred_engine: string | null;
+  preferred_path: string | null;
+  process_running: boolean;
+  osc_connected: boolean;
+  steps: FirstRunStep[];
+  user_message: string | null;
+}
+
+export interface MixxxProbeResponse {
+  success: boolean;
+  osc_connected: boolean;
+  process_running: boolean;
+  message: string;
+}
+
+export interface AppSettings {
+  mixx_host: string;
+  osc_in_port: number;
+  osc_out_port: number;
+  http_host: string;
+  http_port: number;
 }
 
 export interface DiagnosticsResponse {
@@ -146,6 +226,61 @@ export interface ToolCallResponse {
 
 export function fetchHealth(): Promise<HealthResponse> {
   return apiGet<HealthResponse>("/api/health");
+}
+
+export function fetchEngineCapabilities(): Promise<EngineCapabilities> {
+  return apiGet<EngineCapabilities>("/api/v1/capabilities");
+}
+
+export function fetchAppSettings(): Promise<AppSettings> {
+  return apiGet<AppSettings>("/api/settings");
+}
+
+export function saveAppSettings(body: Partial<Pick<AppSettings, "mixx_host" | "osc_in_port" | "osc_out_port">>): Promise<{ success: boolean; message: string; settings: AppSettings }> {
+  return apiPost("/api/settings", {
+    mixx_host: body.mixx_host,
+    osc_in_port: body.osc_in_port,
+    osc_out_port: body.osc_out_port,
+  });
+}
+
+export function fetchMixxxSetup(): Promise<FirstRunStatus> {
+  return apiGet<FirstRunStatus>("/api/mixxx/setup");
+}
+
+export function fetchMixxxDetect(): Promise<{ installations: MixxxInstallation[] }> {
+  return apiGet("/api/mixxx/detect");
+}
+
+export function fetchMixxxStatus(): Promise<MixxxStatusResponse> {
+  return apiGet<MixxxStatusResponse>("/api/mixxx/status");
+}
+
+export function launchMixxx(body: {
+  engine: string;
+  path?: string;
+  osc_port_in?: number;
+  osc_port_out?: number;
+  osc_host_out?: string;
+}): Promise<MixxxLaunchResponse> {
+  return apiPost<MixxxLaunchResponse>("/api/mixxx/launch", body);
+}
+
+export function fetchOscPortStatus(params?: {
+  host?: string;
+  listen_port?: number;
+  send_port?: number;
+}): Promise<OscPortStatus> {
+  const q = new URLSearchParams();
+  if (params?.host) q.set("host", params.host);
+  if (params?.listen_port != null) q.set("listen_port", String(params.listen_port));
+  if (params?.send_port != null) q.set("send_port", String(params.send_port));
+  const qs = q.toString();
+  return apiGet<OscPortStatus>(`/api/osc/ports${qs ? `?${qs}` : ""}`);
+}
+
+export function probeMixxxOsc(): Promise<MixxxProbeResponse> {
+  return apiPost<MixxxProbeResponse>("/api/mixxx/probe");
 }
 
 export function fetchDiagnostics(): Promise<DiagnosticsResponse> {
@@ -266,6 +401,32 @@ export function fetchSkills(): Promise<string[]> {
 
 export function fetchSkillContent(name: string): Promise<string> {
   return apiGet<string>(`/api/skills/${encodeURIComponent(name)}`);
+}
+
+export interface SkinManifestEntry {
+  id: string;
+  name: string;
+  author: string;
+  version: string;
+  description: string;
+  tags: string[];
+  source: string;
+  preview_url?: string;
+  installed: boolean;
+  bundled: boolean;
+  external: boolean;
+  install_action: "create_video_skin" | "preferences" | "external" | "manual";
+  source_url?: string;
+}
+
+export interface SkinsListResponse {
+  skins: SkinManifestEntry[];
+  total: number;
+  tags: string[];
+}
+
+export function fetchSkins(): Promise<SkinsListResponse> {
+  return apiGet<SkinsListResponse>("/api/skins");
 }
 
 export { API_BASE };

@@ -52,6 +52,21 @@ class LibraryResolveRequest(BaseModel):
     track_ref: str
 
 
+class MixxxLaunchRequest(BaseModel):
+    engine: str = "mixxxxx"  # mixxx | mixxxxx
+    path: str | None = None
+    extra_args: list[str] | None = None
+    osc_port_in: int | None = None
+    osc_port_out: int | None = None
+    osc_host_out: str | None = None
+
+
+class SettingsUpdateRequest(BaseModel):
+    mixx_host: str | None = None
+    osc_in_port: int | None = None
+    osc_out_port: int | None = None
+
+
 class ToolCallRequest(BaseModel):
     name: str
     arguments: dict = {}
@@ -105,6 +120,7 @@ from . import (  # noqa: E402
 from .library_search import search_library_smart  # noqa: E402
 from .tool_dispatch import build_tool_dispatch, dispatch_tool  # noqa: E402
 from .tools import register_all_tools  # noqa: E402
+from .tools.skin_manager import list_skins_with_status  # noqa: E402
 
 register_all_tools(mcp)
 
@@ -137,13 +153,18 @@ mount_mcp(fastapi_app, mcp, config)
 
 @fastapi_app.get("/api/health")
 async def health_check():
+    from .mixxx_launcher import get_process_info
+
+    proc = get_process_info()
+    bridge = get_osc_bridge()
     return {
         "status": "ok",
         "server": config.mcp_name,
         "version": "0.1.0",
         "uptime_seconds": get_uptime(),
         "tool_count": get_tool_count(),
-        "providers": {"mixxx": get_osc_bridge().is_connected()},
+        "providers": {"mixxx_osc": bridge.is_connected()},
+        "mixxx_process_running": proc.running,
     }
 
 
@@ -373,6 +394,16 @@ async def sfx_local_route(tag: str | None = None):
         return {"results": [], "total": 0, "message": str(exc), "sfx_available": True}
 
 
+@fastapi_app.get("/api/skins")
+async def list_skins():
+    """Curated skin manifest with install state for the Skins webapp page."""
+    skins = list_skins_with_status()
+    tag_set: set[str] = set()
+    for skin in skins:
+        tag_set.update(skin.get("tags") or [])
+    return {"skins": skins, "total": len(skins), "tags": sorted(tag_set)}
+
+
 @fastapi_app.post("/api/v1/tools/call")
 async def tools_call(req: ToolCallRequest):
     """Invoke a registered MCP tool from the webapp or scripts."""
@@ -541,24 +572,36 @@ async def llm_discover():
 @fastapi_app.get("/api/v1/fork")
 async def fork_info():
     """Detect whether connected DJ software is mixxxxx (video fork) or vanilla Mixxx."""
+    from .engine_capabilities import get_engine_capabilities
+
     bridge = get_osc_bridge()
-    # Probe for mixxxxx-specific COs
-    has_video = bridge.get_state("video_enabled", 1, default=None) is not None
-    has_phase = bridge.get_state("phase", 1, default=None) is not None
-    has_export = bridge.get_state("export_rekordbox", 1, default=None) is not None
+    caps = get_engine_capabilities(bridge)
+    has_video = caps["features"]["video_deck"]["available"] and caps["is_mixxxxx"]
     return {
-        "fork": "mixxxxx" if (has_video or has_phase) else "mixxx",
-        "connected": bridge.is_connected(),
+        "fork": caps["fork"],
+        "connected": caps["osc_connected"],
+        "process_running": caps["process_running"],
+        "summary": caps["summary"],
         "features": {
             "video": has_video,
-            "phase_indicator": has_phase,
-            "rekordbox_export": has_export,
-            "serato_export": True,  # always available in mixxxxx build
-            "virtualdj_export": True,
-            "stem_separation": False,  # option-gated
+            "phase_indicator": caps["features"]["phase_indicator"]["available"],
+            "rekordbox_export": caps["features"]["rekordbox_export"]["available"],
+            "serato_export": caps["is_mixxxxx"],
+            "virtualdj_export": caps["is_mixxxxx"],
+            "stem_separation": caps["features"]["stem_separation"]["available"],
+            "ndi_output": caps["features"]["ndi_output"]["available"],
         },
-        "message": "mixxxxx detected" if has_video else "vanilla Mixxx detected (mixxxxx features unavailable)",
+        "capabilities": caps["features"],
+        "message": caps["summary"],
     }
+
+
+@fastapi_app.get("/api/v1/capabilities")
+async def engine_capabilities():
+    """Full feature matrix for webapp gating (Mixxx vs mixxxxx, OSC state)."""
+    from .engine_capabilities import get_engine_capabilities
+
+    return get_engine_capabilities(get_osc_bridge())
 
 
 @fastapi_app.get("/api/settings")
@@ -570,6 +613,142 @@ async def api_settings():
         "http_host": config.http_host,
         "http_port": config.http_port,
     }
+
+
+@fastapi_app.post("/api/settings")
+async def api_settings_update(req: SettingsUpdateRequest):
+    bridge = get_osc_bridge()
+    if req.mixx_host is not None:
+        config.mixx_host = req.mixx_host.strip() or "127.0.0.1"
+    if req.osc_in_port is not None:
+        config.mixx_osc_in_port = int(req.osc_in_port)
+    if req.osc_out_port is not None:
+        config.mixx_osc_out_port = int(req.osc_out_port)
+    bridge.update_send_target(config.mixx_host, config.mixx_osc_in_port)
+    restart_listen = req.osc_out_port is not None
+    return {
+        "success": True,
+        "settings": await api_settings(),
+        "message": (
+            "Restart mixx-dj-mcp backend to apply OSC listen port change."
+            if restart_listen
+            else "OSC send target updated."
+        ),
+        "restart_required": restart_listen,
+    }
+
+
+@fastapi_app.get("/api/mixxx/setup")
+async def mixxx_first_run_setup():
+    """First-run checklist for users: install → launch → OSC."""
+    from .first_run import get_first_run_status
+
+    bridge = get_osc_bridge()
+    return get_first_run_status(osc_connected=bridge.is_connected())
+
+
+@fastapi_app.get("/api/library/serato/status")
+async def library_serato_status():
+    """List Serato Subcrates if present (no Serato app required — reads filesystem)."""
+    from .serato_paths import serato_status
+
+    return serato_status()
+
+
+@fastapi_app.get("/api/mixxx/detect")
+async def mixxx_detect():
+    from .mixxx_launcher import detect_installations, installation_to_dict
+
+    return {"installations": [installation_to_dict(i) for i in detect_installations()]}
+
+
+@fastapi_app.get("/api/mixxx/status")
+async def mixxx_status():
+    from .engine_capabilities import get_engine_capabilities
+    from .mixxx_launcher import detect_installations, get_process_info, installation_to_dict
+
+    bridge = get_osc_bridge()
+    proc = get_process_info()
+    caps = get_engine_capabilities(bridge)
+    return {
+        "process": {
+            "running": proc.running,
+            "pid": proc.pid,
+            "exe": proc.exe,
+        },
+        "osc": {
+            "connected": caps["osc_connected"],
+            "host": config.mixx_host,
+            "in_port": config.mixx_osc_in_port,
+            "out_port": config.mixx_osc_out_port,
+            "setup_hint": (
+                "Mixxx → Preferences → MIDI/OSC → Enable OSC. "
+                f"Incoming port {config.mixx_osc_in_port}, outgoing {config.mixx_osc_out_port}, "
+                f"host {config.mixx_host}. Restart Mixxx after changing ports."
+            ),
+        },
+        "fork": {
+            "fork": caps["fork"],
+            "connected": caps["osc_connected"],
+            "summary": caps["summary"],
+            "is_mixxxxx": caps["is_mixxxxx"],
+            "is_vanilla": caps["is_vanilla"],
+        },
+        "capabilities": caps,
+        "installations": [installation_to_dict(i) for i in detect_installations()],
+    }
+
+
+@fastapi_app.get("/api/osc/ports")
+async def api_osc_ports(
+    listen_port: int | None = None,
+    send_port: int | None = None,
+    host: str | None = None,
+):
+    """UDP bind check for MCP listen + Mixxx command ports."""
+    from .osc_ports import osc_port_status
+
+    h = (host or config.mixx_host or "127.0.0.1").strip()
+    lp = int(listen_port if listen_port is not None else config.mixx_osc_out_port)
+    sp = int(send_port if send_port is not None else config.mixx_osc_in_port)
+    return osc_port_status(listen_host=h, listen_port=lp, send_port=sp)
+
+
+@fastapi_app.post("/api/mixxx/launch")
+async def mixxx_launch(req: MixxxLaunchRequest):
+    from .mixxx_launcher import launch_mixxx
+
+    engine = req.engine if req.engine in ("mixxx", "mixxxxx") else "mixxxxx"
+    pin = req.osc_port_in if req.osc_port_in is not None else config.mixx_osc_in_port
+    pout = req.osc_port_out if req.osc_port_out is not None else config.mixx_osc_out_port
+    host = (req.osc_host_out or config.mixx_host or "127.0.0.1").strip()
+    return launch_mixxx(
+        engine=engine,
+        path=req.path,
+        extra_args=req.extra_args,
+        osc_port_in=pin,
+        osc_port_out=pout,
+        osc_host_out=host,
+    )
+
+
+@fastapi_app.post("/api/mixxx/probe")
+async def mixxx_probe():
+    bridge = get_osc_bridge()
+    ok = bridge.probe_mixxx(timeout_s=2.0)
+    from .mixxx_launcher import get_process_info
+
+    proc = get_process_info()
+    msg = (
+        "OSC pong received — mixxxxx connected."
+        if ok
+        else (
+            "No OSC pong. Is Mixxx running with OSC enabled on the configured ports?"
+            if proc.running
+            else "Mixxx is not running — launch it first."
+        )
+    )
+    return {"success": ok, "osc_connected": ok, "process_running": proc.running, "message": msg}
 
 
 @fastapi_app.post("/api/v1/deck/{deck_id}/load")

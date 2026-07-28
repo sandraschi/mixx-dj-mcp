@@ -1,10 +1,10 @@
 import pytest
-from unittest.mock import patch
 
 
 @pytest.mark.asyncio
 async def test_crossfader_set():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="crossfader_set", value=0.5)
@@ -14,7 +14,8 @@ async def test_crossfader_set():
 
 @pytest.mark.asyncio
 async def test_crossfader_curve():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="crossfader_curve", value=0.3)
@@ -24,7 +25,8 @@ async def test_crossfader_curve():
 
 @pytest.mark.asyncio
 async def test_volume_set():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="volume_set", deck=1, value=0.85)
@@ -34,7 +36,8 @@ async def test_volume_set():
 
 @pytest.mark.asyncio
 async def test_gain_set():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="gain_set", deck=1, value=2.0)
@@ -44,7 +47,8 @@ async def test_gain_set():
 
 @pytest.mark.asyncio
 async def test_volume_clamp():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="volume_set", deck=1, value=5.0)
@@ -54,7 +58,8 @@ async def test_volume_clamp():
 
 @pytest.mark.asyncio
 async def test_eq_set():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="eq_set", deck=1, eq_band="low", value=0.8)
@@ -64,7 +69,8 @@ async def test_eq_set():
 
 @pytest.mark.asyncio
 async def test_eq_set_mid():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="eq_set", deck=1, eq_band="mid", value=0.5)
@@ -74,7 +80,8 @@ async def test_eq_set_mid():
 
 @pytest.mark.asyncio
 async def test_eq_set_high():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="eq_set", deck=1, eq_band="high", value=0.6)
@@ -84,7 +91,8 @@ async def test_eq_set_high():
 
 @pytest.mark.asyncio
 async def test_headphone_cue():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="headphone_cue", deck=1, enable=True)
@@ -94,7 +102,8 @@ async def test_headphone_cue():
 
 @pytest.mark.asyncio
 async def test_talkover():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="talkover", enable=True)
@@ -104,7 +113,8 @@ async def test_talkover():
 
 @pytest.mark.asyncio
 async def test_mic_gain():
-    from mixx_dj_mcp.tools.mixer import mixx_mixer, get_bridge
+    from mixx_dj_mcp.tools.mixer import get_bridge, mixx_mixer
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_mixer(operation="mic_gain", value=0.7)
@@ -115,5 +125,6 @@ async def test_mic_gain():
 @pytest.mark.asyncio
 async def test_invalid_operation():
     from mixx_dj_mcp.tools.mixer import mixx_mixer
+
     result = await mixx_mixer(operation="nonexistent_op", deck=1)
     assert result["success"] is False

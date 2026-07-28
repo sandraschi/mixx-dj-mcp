@@ -1,17 +1,18 @@
 import pytest
-from unittest.mock import patch
 
 
 @pytest.mark.asyncio
 async def test_list_effects():
     from mixx_dj_mcp.tools.effects import mixx_effects
+
     result = await mixx_effects(operation="list_effects", rack=1, unit=1)
     assert result["success"] is True
 
 
 @pytest.mark.asyncio
 async def test_chain_load():
-    from mixx_dj_mcp.tools.effects import mixx_effects, get_bridge
+    from mixx_dj_mcp.tools.effects import get_bridge, mixx_effects
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_effects(operation="chain_load", rack=1, unit=1, effect="Flanger")
@@ -21,7 +22,8 @@ async def test_chain_load():
 
 @pytest.mark.asyncio
 async def test_chain_clear():
-    from mixx_dj_mcp.tools.effects import mixx_effects, get_bridge
+    from mixx_dj_mcp.tools.effects import get_bridge, mixx_effects
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_effects(operation="chain_clear", rack=1, unit=1)
@@ -31,7 +33,8 @@ async def test_chain_clear():
 
 @pytest.mark.asyncio
 async def test_effect_enable():
-    from mixx_dj_mcp.tools.effects import mixx_effects, get_bridge
+    from mixx_dj_mcp.tools.effects import get_bridge, mixx_effects
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_effects(operation="effect_enable", rack=1, unit=1, enable=True)
@@ -41,7 +44,8 @@ async def test_effect_enable():
 
 @pytest.mark.asyncio
 async def test_effect_disable():
-    from mixx_dj_mcp.tools.effects import mixx_effects, get_bridge
+    from mixx_dj_mcp.tools.effects import get_bridge, mixx_effects
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_effects(operation="effect_enable", rack=1, unit=1, enable=False)
@@ -51,7 +55,8 @@ async def test_effect_disable():
 
 @pytest.mark.asyncio
 async def test_parameter_set():
-    from mixx_dj_mcp.tools.effects import mixx_effects, get_bridge
+    from mixx_dj_mcp.tools.effects import get_bridge, mixx_effects
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_effects(operation="parameter_set", rack=1, unit=1, parameter=2, value=0.75)
@@ -61,7 +66,8 @@ async def test_parameter_set():
 
 @pytest.mark.asyncio
 async def test_meta_set():
-    from mixx_dj_mcp.tools.effects import mixx_effects, get_bridge
+    from mixx_dj_mcp.tools.effects import get_bridge, mixx_effects
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_effects(operation="meta_set", rack=1, unit=1, value=0.5)
@@ -72,6 +78,7 @@ async def test_meta_set():
 @pytest.mark.asyncio
 async def test_invalid_operation():
     from mixx_dj_mcp.tools.effects import mixx_effects
+
     result = await mixx_effects(operation="nonexistent_op", rack=1, unit=1)
     assert result["success"] is False
 
@@ -79,5 +86,6 @@ async def test_invalid_operation():
 @pytest.mark.asyncio
 async def test_missing_effect_name():
     from mixx_dj_mcp.tools.effects import mixx_effects
+
     result = await mixx_effects(operation="chain_load", rack=1, unit=1)
     assert result["success"] is False

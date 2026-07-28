@@ -8,6 +8,9 @@ import {
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { API_BASE, fetchHealth, fetchDeckStatus } from "../lib/api";
+import MixxxConnectionPanel from "../components/MixxxConnectionPanel";
+import OnboardingPanel from "../components/OnboardingPanel";
+import FirstRunPanel from "../components/FirstRunPanel";
 
 export default function Dashboard() {
   const backendStatus = useStore((s) => s.backendStatus);
@@ -23,23 +26,27 @@ export default function Dashboard() {
     tool_count: number;
   } | null>(null);
   const [restarting, setRestarting] = useState(false);
+  const [mixxxOsc, setMixxxOsc] = useState(false);
+  const [mixxxRunning, setMixxxRunning] = useState(false);
   const [forkData, setForkData] = useState<{ fork: string; features: Record<string, boolean> } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       const h = await fetchHealth();
       setHealthData(h);
+      setMixxxOsc(Boolean(h.providers?.mixxx_osc));
+      setMixxxRunning(Boolean(h.mixxx_process_running));
       setBackendStatus("connected");
       try {
         const [ds, fk] = await Promise.all([
           fetchDeckStatus(),
-          fetch(`${API_BASE}/api/v1/fork`).then((r) => r.ok ? r.json() : null),
+          fetch(`${API_BASE}/api/v1/fork`).then((r) => (r.ok ? r.json() : null)),
         ]);
         setDecks(ds.decks);
         setCrossfader(ds.crossfader);
         setForkData(fk);
       } catch {
-        // optional
+        // deck/fork optional when OSC offline
       }
     } catch {
       setBackendStatus("error");
@@ -85,12 +92,19 @@ export default function Dashboard() {
             }`}
           />
           <span className="text-sm text-slate-400">
+            Backend{" "}
             {backendStatus === "connected"
-              ? "Connected"
+              ? "online"
               : backendStatus === "error"
-                ? "Offline"
-                : "Connecting..."}
+                ? "offline"
+                : "connecting…"}
           </span>
+          {backendStatus === "connected" && (
+            <span className="text-xs text-slate-500">
+              · Mixxx {mixxxRunning ? "running" : "stopped"} · OSC{" "}
+              {mixxxOsc ? "ok" : "down"}
+            </span>
+          )}
           {backendStatus === "error" && (
             <button
               onClick={restartBackend}
@@ -106,6 +120,10 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <FirstRunPanel />
+      <OnboardingPanel />
+      <MixxxConnectionPanel />
 
       {healthData && (
         <div className="grid grid-cols-3 gap-4">

@@ -79,6 +79,8 @@ if (-not $Headless -and -not $BackendOnly) {
 Write-Host "=== Mixx-DJ-MCP running ===" -ForegroundColor Cyan
 Write-Host "  Backend:  http://127.0.0.1:$BackendPort" -ForegroundColor Green
 Write-Host "  Health:   http://127.0.0.1:$BackendPort/api/health" -ForegroundColor Green
+Write-Host "  Dashboard: launch Mixxx/mixxxxx from Overview -> DJ Engine panel" -ForegroundColor Yellow
+Write-Host "  OSC: Mixxx prefs in 11119, out 11118, host 127.0.0.1" -ForegroundColor Gray
 Write-Host "  Press Ctrl+C to stop" -ForegroundColor Gray
 
 # Keep-alive

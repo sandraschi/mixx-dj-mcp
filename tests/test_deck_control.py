@@ -1,11 +1,10 @@
 import pytest
-from unittest.mock import patch
 
 
 @pytest.mark.asyncio
 async def test_play_pause():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck
-    from mixx_dj_mcp.tools.deck_control import get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     result = await mixx_deck(operation="play_pause", deck=1)
     assert result["success"] is True
@@ -14,7 +13,8 @@ async def test_play_pause():
 
 @pytest.mark.asyncio
 async def test_stop():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="stop", deck=2)
@@ -24,7 +24,8 @@ async def test_stop():
 
 @pytest.mark.asyncio
 async def test_sync_enable():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="sync_enable", deck=1, enable=True)
@@ -34,7 +35,8 @@ async def test_sync_enable():
 
 @pytest.mark.asyncio
 async def test_rate_set():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="rate_set", deck=1, value=0.05)
@@ -44,7 +46,8 @@ async def test_rate_set():
 
 @pytest.mark.asyncio
 async def test_load_track():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="load", deck=1, track_path="C:/Music/track.mp3")
@@ -54,7 +57,8 @@ async def test_load_track():
 
 @pytest.mark.asyncio
 async def test_seek():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="seek", deck=1, value=60.0)
@@ -64,7 +68,8 @@ async def test_seek():
 
 @pytest.mark.asyncio
 async def test_cue_set():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="cue_set", deck=1)
@@ -74,7 +79,8 @@ async def test_cue_set():
 
 @pytest.mark.asyncio
 async def test_beatloop():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="beatloop", deck=1, beats=8)
@@ -84,7 +90,8 @@ async def test_beatloop():
 
 @pytest.mark.asyncio
 async def test_hotcue_activate():
-    from mixx_dj_mcp.tools.deck_control import mixx_deck, get_bridge
+    from mixx_dj_mcp.tools.deck_control import get_bridge, mixx_deck
+
     b = get_bridge()
     b.send.reset_mock()
     result = await mixx_deck(operation="hotcue_activate", deck=1, hotcue=3)
@@ -95,6 +102,7 @@ async def test_hotcue_activate():
 @pytest.mark.asyncio
 async def test_invalid_operation():
     from mixx_dj_mcp.tools.deck_control import mixx_deck
+
     result = await mixx_deck(operation="invalid_op", deck=1)
     assert result["success"] is False
 
@@ -102,5 +110,6 @@ async def test_invalid_operation():
 @pytest.mark.asyncio
 async def test_missing_value():
     from mixx_dj_mcp.tools.deck_control import mixx_deck
+
     result = await mixx_deck(operation="rate_set", deck=1)
     assert result["success"] is False

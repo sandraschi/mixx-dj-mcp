@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useStore } from "../lib/store";
+import { forkLabel } from "../lib/capabilities";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -8,19 +9,44 @@ const routeTitles: Record<string, string> = {
   "/effects": "Effects",
   "/chat": "Chat",
   "/tools": "Tools",
+  "/cockpit": "Cockpit",
+  "/skins": "Skins",
+  "/help": "Help",
   "/settings": "Settings",
 };
 
 export default function Topbar() {
   const location = useLocation();
   const backendStatus = useStore((s) => s.backendStatus);
+  const engineCaps = useStore((s) => s.engineCaps);
   const daniMode = useStore((s) => s.daniMode);
   const title = routeTitles[location.pathname] || "Mixx-DJ-MCP";
 
   return (
     <header className="flex items-center justify-between h-14 px-6 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl shrink-0">
       <h1 className="text-lg font-semibold text-slate-100">{title}</h1>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 flex-wrap justify-end">
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+            engineCaps.is_mixxxxx
+              ? "bg-purple-500/15 text-purple-300 border border-purple-500/25"
+              : engineCaps.is_vanilla
+                ? "bg-slate-800 text-slate-400 border border-slate-700"
+                : "bg-slate-900 text-slate-500 border border-slate-800"
+          }`}
+          title={engineCaps.summary}
+        >
+          {forkLabel(engineCaps.fork)}
+        </span>
+        {engineCaps.process_running && (
+          <span
+            className={`text-[10px] ${
+              engineCaps.osc_connected ? "text-green-400" : "text-amber-400"
+            }`}
+          >
+            OSC {engineCaps.osc_connected ? "ok" : "off"}
+          </span>
+        )}
         <span
           data-testid="backend-dot"
           className={`w-2 h-2 rounded-full ${
@@ -31,12 +57,13 @@ export default function Topbar() {
                 : "bg-gray-500 animate-pulse"
           }`}
         />
-        <span className="text-xs text-slate-500 capitalize">
+        <span className="text-xs text-slate-500">
+          MCP{" "}
           {backendStatus === "connected"
-            ? "Connected"
+            ? "online"
             : backendStatus === "error"
-              ? "Offline"
-              : "Connecting..."}
+              ? "offline"
+              : "…"}
         </span>
         {daniMode && (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">

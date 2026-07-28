@@ -8,6 +8,10 @@ from typing import Any, Literal
 from fastmcp import FastMCP
 from rich.console import Console
 
+from mixx_dj_mcp.skinmaker import scheme_path
+from mixx_dj_mcp.skinmaker.qss_patch import patch_qss_file
+from mixx_dj_mcp.skinmaker.svg_recolor import recolor_skin_svgs
+
 console = Console(file=__import__("sys").stderr)
 
 # Default color palette when prompt parsing fails
@@ -18,8 +22,6 @@ _DEFAULT_COLORS = {
     "text": "#ffffff",
     "waveform": "#00ffff",
 }
-
-INKSCAPE_MCP_URL = "http://127.0.0.1:11028/mcp"
 
 # Curated skin manifest
 AVAILABLE_SKINS = {
@@ -125,6 +127,52 @@ def _get_skins_path() -> Path:
         path = Path.home() / ".mixxx" / "skins"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def _user_skin_folder_name(skin_id: str) -> str:
+    """Directory name under the Mixxx user skins folder."""
+    if skin_id == "mixxxxx-video":
+        return "MixxxxxVideo"
+    return skin_id
+
+
+def _is_skin_installed(skin_id: str) -> bool:
+    folder = _user_skin_folder_name(skin_id)
+    install_path = _get_skins_path() / folder
+    return install_path.is_dir() and (install_path / "skin.xml").is_file()
+
+
+def _skin_install_action(skin_id: str, source: str) -> str:
+    if skin_id == "mixxxxx-video":
+        return "create_video_skin"
+    if source == "bundled":
+        return "preferences"
+    if source.startswith("http"):
+        return "external"
+    return "manual"
+
+
+def list_skins_with_status() -> list[dict[str, Any]]:
+    """Manifest entries enriched with install state for the webapp."""
+    skins: list[dict[str, Any]] = []
+    for skin_id, info in AVAILABLE_SKINS.items():
+        source = info.get("source", "")
+        bundled = source == "bundled"
+        external = source.startswith("http")
+        install_action = _skin_install_action(skin_id, source)
+        skins.append(
+            {
+                "id": skin_id,
+                **info,
+                "installed": _is_skin_installed(skin_id),
+                "bundled": bundled,
+                "external": external,
+                "install_action": install_action,
+                "source_url": source if external else "",
+                "preview_url": info.get("preview_url") or "",
+            }
+        )
+    return skins
 
 
 def _find_bundled_skin(skin_id: str) -> Path | None:
@@ -284,43 +332,19 @@ async def _parse_prompt_for_colors(prompt: str) -> dict:
     return dict(_DEFAULT_COLORS)
 
 
-async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str) -> int:
-    """Recolor SVG assets using inkscape-mcp introspection + text replacement."""
-    import httpx
+def _resolve_mixxxxx_video_qss(target: str = "installed") -> Path | None:
+    if target == "source":
+        root = _find_mixxxxx_video_source()
+        if not root:
+            return None
+        qss = root / "style_daylight.qss"
+        return qss if qss.is_file() else None
+    qss = _get_skins_path() / "MixxxxxVideo" / "style_daylight.qss"
+    return qss if qss.is_file() else None
 
-    style_dir = skin_path / "style"
-    if not style_dir.exists():
-        return 0
 
-    svg_files = list(style_dir.rglob("*.svg"))
-    if not svg_files:
-        return 0
-
-    # Probe inkscape-mcp availability
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            r = await client.post(
-                INKSCAPE_MCP_URL,
-                json={
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": "inkscape_file",
-                    "params": {"operation": "info", "input_path": str(svg_files[0])},
-                },
-                timeout=10,
-            )
-            if r.status_code == 200:
-                resp = r.json()
-                resp.get("result", {}).get("content", [{}])[0].get("text", "").find("success") > -1 or resp.get(
-                    "result", {}
-                ).get("success", False)
-    except Exception:
-        console.print("[yellow]inkscape-mcp probe failed[/yellow]")
-
-    count = 0
-
-    # Build color replacement map
-    replacements = {
+def _llm_color_replacements(colors: dict[str, str]) -> dict[str, str]:
+    return {
         "#000000": colors.get("bg_dark", "#000000"),
         "#1a1a2e": colors.get("bg_medium", "#1a0033"),
         "#333333": colors.get("bg_medium", "#333333"),
@@ -335,18 +359,12 @@ async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, prompt: str
         "#0066ff": colors.get("accent", "#0066ff"),
     }
 
-    for svg in svg_files[:20]:
-        try:
-            content = svg.read_text(encoding="utf-8")
-            for old, new in replacements.items():
-                if old != new:
-                    content = content.replace(old, new)
-            svg.write_text(content, encoding="utf-8")
-            count += 1
-        except Exception:
-            console.print(f"[yellow]Failed to recolor SVG: {svg.name}[/yellow]")
 
-    return count
+async def _recolor_skins_via_inkscape(skin_path: Path, colors: dict, _prompt: str) -> int:
+    """Recolor SVG assets via skinmaker (inkscape-mcp probe + hex fallback)."""
+    scheme_replacements = _llm_color_replacements(colors)
+    result = await recolor_skin_svgs(skin_path, scheme_replacements)
+    return int(result.get("files_updated", 0))
 
 
 async def _generate_skin(name: str, prompt: str, base_skin: str) -> dict:
@@ -401,13 +419,24 @@ async def _generate_skin(name: str, prompt: str, base_skin: str) -> dict:
 def register_skin_tools(mcp: FastMCP):
     @mcp.tool()
     async def mixx_skin(
-        operation: Literal["list", "search", "install", "uninstall", "preview", "create_video_skin", "create_skin"],
+        operation: Literal[
+            "list",
+            "search",
+            "install",
+            "uninstall",
+            "preview",
+            "create_video_skin",
+            "create_skin",
+            "patch_scheme",
+        ],
         query: str = "",
         skin_id: str = "",
         tags: str = "",
         name: str = "",
         prompt: str = "",
         base_skin: str = "latenight",
+        scheme: str = "daylight-v2",
+        target: str = "installed",
     ) -> dict[str, Any]:
         """
         Skin browser and manager for Mixxx.
@@ -423,6 +452,8 @@ def register_skin_tools(mcp: FastMCP):
         - create_video_skin: Copy LateNight and add VideoWidget entries for video-DJ workflows
         - create_skin: Generate a new skin by cloning LateNight and recoloring SVGs via inkscape-mcp
           (requires name and prompt; optional base_skin defaults to latenight)
+        - patch_scheme: Apply a bundled color scheme to Mixxxxx Video Daylight QSS
+          (scheme defaults to daylight-v2; target=installed|source)
 
         Returns:
             Dict with operation result and list of skins
@@ -433,10 +464,11 @@ def register_skin_tools(mcp: FastMCP):
             mixx_skin("install", skin_id="tara")
             mixx_skin("create_video_skin")
             mixx_skin("create_skin", name="cyberpunk", prompt="dark purple with cyan accents, neon waveform")
+            mixx_skin("patch_scheme", scheme="daylight-v2", target="installed")
         """
         try:
             if operation == "list":
-                skins = [{"id": sid, **info} for sid, info in AVAILABLE_SKINS.items()]
+                skins = list_skins_with_status()
                 return {
                     "success": True,
                     "message": f"Found {len(skins)} available skins",
@@ -605,6 +637,28 @@ def register_skin_tools(mcp: FastMCP):
                     }
                 result = await _generate_skin(name, prompt, base_skin)
                 return result
+
+            elif operation == "patch_scheme":
+                try:
+                    scheme_path_resolved = scheme_path(scheme)
+                except FileNotFoundError:
+                    return {
+                        "success": False,
+                        "message": f"Unknown scheme '{scheme}'. Bundled: daylight-v2",
+                        "data": {},
+                    }
+                qss = _resolve_mixxxxx_video_qss(target)
+                if not qss:
+                    hint = "Run create_video_skin first (target=installed), or set MIXXXXX_PATH (target=source)."
+                    return {"success": False, "message": f"Daylight QSS not found. {hint}", "data": {}}
+                patch_result = patch_qss_file(qss, scheme_path_resolved)
+                return {
+                    "success": True,
+                    "message": (
+                        f"Applied scheme '{scheme}' to {qss} ({patch_result['replacements_applied']} hex swaps)"
+                    ),
+                    "data": patch_result,
+                }
 
             else:
                 return {"success": False, "message": f"Unknown operation: {operation}", "data": {}}

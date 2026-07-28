@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import type { EngineCapabilities } from "./capabilities";
+import { DEFAULT_CAPABILITIES } from "./capabilities";
 
 export interface Deck {
   id: number;
@@ -29,7 +31,9 @@ interface AppState {
   libraryResults: LibraryItem[];
   sidebarCollapsed: boolean;
   daniMode: boolean;
+  engineCaps: EngineCapabilities;
   setBackendStatus: (status: "connecting" | "connected" | "error") => void;
+  setEngineCaps: (caps: EngineCapabilities) => void;
   setDeck: (id: number, data: Partial<Deck>) => void;
   setDecks: (decks: Deck[]) => void;
   setCrossfader: (pos: number) => void;
@@ -58,6 +62,7 @@ export const useStore = create<AppState>((set) => ({
   libraryResults: [],
   sidebarCollapsed: false,
   setBackendStatus: (status) => set({ backendStatus: status }),
+  setEngineCaps: (caps) => set({ engineCaps: caps }),
   setDeck: (id, data) =>
     set((state) => ({
       decks: state.decks.map((d) => (d.id === id ? { ...d, ...data } : d)),
@@ -67,6 +72,7 @@ export const useStore = create<AppState>((set) => ({
   setLibraryResults: (results) => set({ libraryResults: results }),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   daniMode: localStorage.getItem("mixx-dani-mode") === "true",
+  engineCaps: DEFAULT_CAPABILITIES,
   setDaniMode: (enabled) => {
     localStorage.setItem("mixx-dani-mode", String(enabled));
     set({ daniMode: enabled });

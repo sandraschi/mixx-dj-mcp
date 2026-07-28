@@ -2,6 +2,19 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wrench, ChevronDown, Code, FileText } from "lucide-react";
 import { apiGet } from "../lib/api";
+import { useStore } from "../lib/store";
+import { featureEnabled } from "../lib/capabilities";
+
+const MIXXXXX_ONLY_TOOLS = new Set([
+  "mixx_stems",
+  "mixx_skin",
+]);
+
+const TOOL_FEATURES: Record<string, string> = {
+  mixx_stems: "stem_separation",
+  mixx_skin: "video_skins",
+  mixx_deck: "osc_deck_control",
+};
 
 interface ToolInfo {
   name: string;
@@ -12,6 +25,7 @@ interface ToolInfo {
 }
 
 export default function Tools() {
+  const engineCaps = useStore((s) => s.engineCaps);
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -51,6 +65,9 @@ export default function Tools() {
 
       <div className="space-y-2">
         {tools.map((tool) => {
+          const feat = TOOL_FEATURES[tool.name];
+          const toolDisabled =
+            feat && !featureEnabled(engineCaps, feat as import("../lib/capabilities").FeatureId);
           const isPortmanteau =
             tool.parameters &&
             typeof tool.parameters === "object" &&
@@ -58,7 +75,11 @@ export default function Tools() {
           return (
             <motion.div
               key={tool.name}
-              className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden"
+              className={`rounded-xl border overflow-hidden ${
+                toolDisabled
+                  ? "border-slate-800/50 bg-slate-950/40 opacity-60"
+                  : "border-slate-800 bg-slate-900/50"
+              }`}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
             >
@@ -76,6 +97,16 @@ export default function Tools() {
                   {isPortmanteau && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-medium">
                       PORTMANTEAU
+                    </span>
+                  )}
+                  {MIXXXXX_ONLY_TOOLS.has(tool.name) && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-medium">
+                      mixxxxx
+                    </span>
+                  )}
+                  {toolDisabled && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">
+                      unavailable
                     </span>
                   )}
                 </div>

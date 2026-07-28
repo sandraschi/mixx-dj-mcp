@@ -7,7 +7,7 @@ import {
   Package2,
   Cpu,
 } from "lucide-react";
-import { API_BASE, fetchHealth, fetchLLMDiscover, type LLMProvider } from "../lib/api";
+import { API_BASE, fetchHealth, fetchLLMDiscover, fetchAppSettings, saveAppSettings, type LLMProvider } from "../lib/api";
 import { useStore } from "../lib/store";
 
 const LLM_PROVIDER_KEY = "mixx-llm-provider";
@@ -16,8 +16,11 @@ const LLM_MODEL_KEY = "mixx-llm-model";
 export default function Settings() {
   const daniMode = useStore((s) => s.daniMode);
   const setDaniMode = useStore((s) => s.setDaniMode);
-  const [oscPort, setOscPort] = useState("5133");
+  const [oscPort, setOscPort] = useState("11119");
+  const [oscOutPort, setOscOutPort] = useState("11118");
   const [host, setHost] = useState("127.0.0.1");
+  const [settingsSaved, setSettingsSaved] = useState<string | null>(null);
+  const [savingOsc, setSavingOsc] = useState(false);
   const [backendInfo, setBackendInfo] = useState<{
     version: string;
     server: string;
@@ -36,8 +39,30 @@ export default function Settings() {
         const h = await fetchHealth();
         setBackendInfo(h);
       } catch {}
+      try {
+        const s = await fetchAppSettings();
+        setHost(s.mixx_host);
+        setOscPort(String(s.osc_in_port));
+        setOscOutPort(String(s.osc_out_port));
+      } catch {}
     })();
   }, []);
+
+  const saveOscSettings = async () => {
+    setSavingOsc(true);
+    setSettingsSaved(null);
+    try {
+      const r = await saveAppSettings({
+        mixx_host: host,
+        osc_in_port: parseInt(oscPort, 10),
+        osc_out_port: parseInt(oscOutPort, 10),
+      });
+      setSettingsSaved(r.message);
+    } catch (e) {
+      setSettingsSaved(e instanceof Error ? e.message : "Save failed");
+    }
+    setSavingOsc(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -229,7 +254,7 @@ export default function Settings() {
         <div className="p-4 space-y-4">
           <div>
             <label className="text-xs text-slate-500 block mb-1">
-              OSC Host
+              OSC Host (Mixxx receives commands here)
             </label>
             <input
               type="text"
@@ -238,17 +263,44 @@ export default function Settings() {
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500/50"
             />
           </div>
-          <div>
-            <label className="text-xs text-slate-500 block mb-1">
-              OSC Port
-            </label>
-            <input
-              type="number"
-              value={oscPort}
-              onChange={(e) => setOscPort(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500/50"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 block mb-1">
+                OSC In (→ Mixxx)
+              </label>
+              <input
+                type="number"
+                value={oscPort}
+                onChange={(e) => setOscPort(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 block mb-1">
+                OSC Out (← Mixxx)
+              </label>
+              <input
+                type="number"
+                value={oscOutPort}
+                onChange={(e) => setOscOutPort(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={saveOscSettings}
+            disabled={savingOsc}
+            className="px-4 py-2 rounded-lg bg-amber-500/10 text-amber-400 text-sm hover:bg-amber-500/20 disabled:opacity-50"
+          >
+            {savingOsc ? "Saving…" : "Save OSC settings"}
+          </button>
+          {settingsSaved && (
+            <p className="text-xs text-slate-400">{settingsSaved}</p>
+          )}
+          <p className="text-[10px] text-slate-600">
+            Match Mixxx Preferences → MIDI/OSC. Changing the listen (out) port requires restarting the mixx-dj-mcp backend.
+          </p>
         </div>
       </div>
 
