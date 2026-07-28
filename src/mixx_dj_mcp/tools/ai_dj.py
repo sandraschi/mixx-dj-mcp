@@ -221,7 +221,7 @@ def _rule_plan(style: str, duration: int, start_bpm: float, end_bpm: float, ener
     )
 
 
-import json  # noqa: E402
+import json
 
 
 def register_ai_tools(mcp: FastMCP):

@@ -232,7 +232,7 @@ async def mixx_vinyl(
                     "message": f"Catalog script not found at {script_path}",
                     "data": {},
                 }
-            result = subprocess.run(  # noqa: S603
+            result = subprocess.run(
                 [sys.executable, script_path, directory],
                 capture_output=True,
                 text=True,

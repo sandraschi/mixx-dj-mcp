@@ -229,7 +229,7 @@ def _get_audio_duration(path: str) -> float:
         return 0
 
     try:
-        r = subprocess.run(  # noqa: S603
+        r = subprocess.run(
             [ffprobe_path, "-v", "quiet", "-print_format", "json", "-show_format", path],
             capture_output=True,
             timeout=15,

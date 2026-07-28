@@ -208,7 +208,7 @@ def launch_mixxx(
             args.extend(cli_extras)
 
     try:
-        popen = subprocess.Popen(  # noqa: S603 — user-selected Mixxx path from detect/env
+        popen = subprocess.Popen(
             args,
             cwd=str(Path(exe).parent),
             creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
