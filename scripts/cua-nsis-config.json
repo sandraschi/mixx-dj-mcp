@@ -2,7 +2,10 @@
   "product_name": "Mixx-DJ-MCP",
   "install_dir": "%LOCALAPPDATA%\\Mixx-DJ-MCP",
   "operator_exe": "mixx-dj-native.exe",
-  "backend_process_names": ["mixx-dj-native", "mixx-dj-mcp-backend"],
+  "backend_process_names": [
+    "mixx-dj-native",
+    "mixx-dj-mcp-backend"
+  ],
   "backend_port": 11116,
   "health_path": "/health",
   "diagnostics_path": "/api/v1/diagnostics",
@@ -10,5 +13,47 @@
   "window_title_re": "Mixx DJ MCP",
   "nsis_glob": "native/target/release/bundle/nsis/Mixx-DJ-MCP_*_x64-setup.exe",
   "bridge_ok_text": "API reachable",
-  "uninstall_registry_filter": "*Mixx-DJ*"
+  "uninstall_registry_filter": "*Mixx-DJ*",
+  "nav_routes": [
+    [
+      "Dashboard",
+      "Dashboard"
+    ],
+    [
+      "Cockpit",
+      "Cockpit"
+    ],
+    [
+      "Decks",
+      "Decks"
+    ],
+    [
+      "Library",
+      "Library"
+    ],
+    [
+      "Effects",
+      "Effects"
+    ],
+    [
+      "Chat",
+      "Chat"
+    ],
+    [
+      "Tools",
+      "Tools"
+    ],
+    [
+      "Skins",
+      "Skins"
+    ],
+    [
+      "Help",
+      "Help"
+    ],
+    [
+      "Settings",
+      "Settings"
+    ]
+  ]
 }

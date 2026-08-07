@@ -1,4 +1,4 @@
-# mixx-dj-mcp — fleet recipes (just 1.50+ safe: one-liners or -File scripts)
+# --- mixx-dj-mcp  fleet recipes  just 1 safe one-liners or -File scripts ---
 
 set windows-shell := ["powershell.exe", "-NoProfile", "-Command"]
 
@@ -43,3 +43,9 @@ patch-daylight-source mixxxxx_root="D:\\Dev\\repos\\mixxxxx":
 # Build Tauri native desktop app (frontend + PyInstaller + NSIS)
 build-native:
     @powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{{justfile_directory()}}/native/build.ps1"
+
+# Bootstrap: install dev deps + pre-commit hook
+bootstrap:
+    uv sync --group dev
+    uv run pre-commit install
+    Write-Host "Pre-commit hooks installed." -ForegroundColor Green

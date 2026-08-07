@@ -1,6 +1,34 @@
 import { useLocation } from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useStore } from "../lib/store";
 import { forkLabel } from "../lib/capabilities";
+
+// EXPERIMENTAL light mode (invert hack). Not fleet standard — see index.css.
+// Toggling `.dark` off the root flips the invert filter; persisted so the
+// choice survives reloads. Delete this + the CSS block to revert.
+const THEME_KEY = "mixx-light-mode";
+
+function useExperimentalTheme() {
+  const [light, setLight] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", !light);
+    try {
+      localStorage.setItem(THEME_KEY, light ? "1" : "0");
+    } catch {
+      // ignore storage errors
+    }
+  }, [light]);
+
+  return { light, toggle: () => setLight((v) => !v) };
+}
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -21,11 +49,21 @@ export default function Topbar() {
   const engineCaps = useStore((s) => s.engineCaps);
   const daniMode = useStore((s) => s.daniMode);
   const title = routeTitles[location.pathname] || "Mixx-DJ-MCP";
+  const { light, toggle } = useExperimentalTheme();
 
   return (
     <header className="flex items-center justify-between h-14 px-6 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl shrink-0">
       <h1 className="text-lg font-semibold text-slate-100">{title}</h1>
       <div className="flex items-center gap-3 flex-wrap justify-end">
+        <button
+          type="button"
+          onClick={toggle}
+          className="p-2 rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+          title={light ? "Switch to dark (experimental light mode)" : "Switch to light (experimental, ugly)"}
+          aria-label="Toggle light mode (experimental)"
+        >
+          {light ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
         <span
           className={`text-[10px] px-2 py-0.5 rounded font-medium ${
             engineCaps.is_mixxxxx
