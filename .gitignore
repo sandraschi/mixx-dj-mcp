@@ -60,6 +60,8 @@ reports/
 
 # Rust / Tauri
 target/
+native/binaries/
+native/resources/
 
 # Node / Bun / Webapp
 node_modules/
