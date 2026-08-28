@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mixx-dj-mcp"
 version = "0.2.0"
-description = "FastMCP server for Mixxx DJ software control via OSC protocol"
+description = "Control Mixxx DJ software from chat: decks, stems, crates, effects, OSC bridge"
 readme = "README.md"
 authors = [
     {name = "Sandra Schilling (sandraschi)", email = "sandraschipal@gmail.com"},
