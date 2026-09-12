@@ -1,0 +1,131 @@
+# mixx-dj-mcp (MCPB Bundle)
+
+FastMCP server for Mixxx DJ software control via OSC protocol
+
+## Usage
+
+Add to \claude_desktop_config.json\:
+\\\json
+{
+  "mcpServers": {
+    "mixx-dj-mcp": {
+      "command": "uv",
+      "args": ["run", "--directory", "\D:\Dev\repos", "python", "-m", "mixx_dj_mcp"],
+      "env": { "PYTHONPATH": "\D:\Dev\repos/src" }
+    }
+  }
+}
+\\\
+
+## Tools
+
+- **health_check**: health_check
+- **diagnostics**: diagnostics
+- **deck_status**: deck_status
+- **library_plex_libraries**: List Plex libraries from plex-mcp (for filter dropdowns).
+- **library_search**: Search via plex-mcp (filters, metadata, semantic) with Mixxx SQLite fallback.
+- **library_resolve**: Resolve plex:rating_key to a local file path for deck load.
+- **library_artwork_plex**: Proxy Plex thumb/poster art through mixx-dj-mcp (same-origin for the webapp).
+- **library_artwork_calibre**: Proxy Calibre book cover through mixx-dj-mcp.
+- **sfx_status**: sfx-mcp connectivity and FreeSound API key status.
+- **sfx_search_route**: Search FreeSound via sfx-mcp.
+- **sfx_download_route**: Download a sound through sfx-mcp to local cache.
+- **sfx_local_route**: List locally cached sfx-mcp sounds.
+- **list_skins**: Curated skin manifest with install state for the Skins webapp page.
+- **tools_call**: Invoke a registered MCP tool from the webapp or scripts.
+- **effects_action**: Apply an effect rack operation via mixx_effects.
+- **music_generate**: Generate music - tries: Lyria (Vertex AI) → MusicGen (local) → songgeneration-mcp.
+- **llm_discover**: Detect local LLM provider(s).
+- **fork_info**: Detect whether connected DJ software is mixxxxx (video fork) or vanilla Mixxx.
+- **engine_capabilities**: Full feature matrix for webapp gating (Mixxx vs mixxxxx, OSC state).
+- **api_settings**: api_settings
+- **api_settings_update**: api_settings_update
+- **mixxx_first_run_setup**: First-run checklist for users: install → launch → OSC.
+- **library_serato_status**: List Serato Subcrates if present (no Serato app required - reads filesystem).
+- **mixxx_detect**: mixxx_detect
+- **mixxx_status**: mixxx_status
+- **api_osc_ports**: UDP bind check for MCP listen + Mixxx command ports.
+- **mixxx_launch**: mixxx_launch
+- **mixxx_probe**: mixxx_probe
+- **deck_load**: deck_load
+- **deck_play_pause**: deck_play_pause
+- **deck_sync**: deck_sync
+- **llm_chat**: Chat endpoint - executes commands via OSC, falls back to Ollama.
+- **deck_cue**: deck_cue
+- **fleet_sources**: List registered external audio sources (songgen, sfx, stems, plex, etc.).
+- **fleet_register**: Register an external audio source for deck handoff.
+- **cockpit_now_playing**: Aggregated 'what's happening' across all decks and connected sources.
+- **voice_command**: Webhook for speech-mcp voice commands.
+- **mixx_ai_set**: mixx_ai_set
+- **mixx_ai_set_plan**: mixx_ai_set(plan)
+- **mixx_ai_set_suggest_next**: mixx_ai_set(suggest_next)
+- **mixx_ai_set_perform_transition**: mixx_ai_set(perform_transition)
+- **mixx_ai_set_review_set**: mixx_ai_set(review_set)
+- **mixx_analyze**: mixx_analyze
+- **_check_librosa_track**: _check_librosa(track)
+- **_check_librosa_batch_status**: _check_librosa(batch_status)
+- **_check_librosa_suggest_cues**: _check_librosa(suggest_cues)
+- **mixx_controller**: mixx_controller
+- **_get_mixxx_controllers_dir_detect**: _get_mixxx_controllers_dir(detect)
+- **_get_mixxx_controllers_dir_install**: _get_mixxx_controllers_dir(install)
+- **_get_mixxx_controllers_dir_list**: _get_mixxx_controllers_dir(list)
+- **_get_mixxx_controllers_dir_status**: _get_mixxx_controllers_dir(status)
+- **_get_mixxx_controllers_dir_download**: _get_mixxx_controllers_dir(download)
+- **mixx_daw**: mixx_daw
+- **mixx_deck**: mixx_deck
+- **mixx_effects**: mixx_effects
+- **mixx_history**: mixx_history
+- **mixx_history_plays**: mixx_history(plays)
+- **mixx_history_transitions**: mixx_history(transitions)
+- **mixx_history_profile**: mixx_history(profile)
+- **mixx_history_suggest**: mixx_history(suggest)
+- **mixx_history_log_play**: mixx_history(log_play)
+- **mixx_history_log_transition**: mixx_history(log_transition)
+- **mixx_library**: mixx_library
+- **mixx_mixer**: mixx_mixer
+- **mixx_mixer_high**: mixx_mixer(high)
+- **mixx_mixer_mid**: mixx_mixer(mid)
+- **mixx_mixer_low**: mixx_mixer(low)
+- **show_deck_status_card**: show_deck_status_card
+- **show_mixer_status_card**: show_mixer_status_card
+- **show_library_status_card**: show_library_status_card
+- **mixx_recording**: mixx_recording
+- **_get_sets_dir_start**: _get_sets_dir(start)
+- **_get_sets_dir_stop**: _get_sets_dir(stop)
+- **_get_sets_dir_list**: _get_sets_dir(list)
+- **_get_sets_dir_replay**: _get_sets_dir(replay)
+- **_get_sets_dir_export**: _get_sets_dir(export)
+- **_get_sets_dir_status**: _get_sets_dir(status)
+- **mixx_set**: mixx_set
+- **_get_mixxx_db_path_sequence**: _get_mixxx_db_path(sequence)
+- **_get_mixxx_db_path_record**: _get_mixxx_db_path(record)
+- **_get_mixxx_db_path_analyze_set**: _get_mixxx_db_path(analyze_set)
+- **mixx_skin**: mixx_skin
+- **mixx_crate**: mixx_crate
+- **register_crate_tools_create**: register_crate_tools(create)
+- **register_crate_tools_list**: register_crate_tools(list)
+- **register_crate_tools_delete**: register_crate_tools(delete)
+- **register_crate_tools_add_track**: register_crate_tools(add_track)
+- **register_crate_tools_create_agentic**: register_crate_tools(create_agentic)
+- **mixx_stems**: mixx_stems
+- **_check_demucs_separate**: _check_demucs(separate)
+- **_check_demucs_status**: _check_demucs(status)
+- **_check_demucs_load_stems**: _check_demucs(load_stems)
+- **_check_demucs_transition**: _check_demucs(transition)
+- **_check_demucs_mute**: _check_demucs(mute)
+- **_check_demucs_volume**: _check_demucs(volume)
+- **mixx_transition**: mixx_transition
+- **_llm_pick_transition_suggest**: _llm_pick_transition(suggest)
+- **_llm_pick_transition_apply**: _llm_pick_transition(apply)
+- **_llm_pick_transition_auto_crossfader**: _llm_pick_transition(auto_crossfader)
+- **mixx_vinyl**: mixx_vinyl
+- **_get_conn_catalog**: _get_conn(catalog)
+- **_get_conn_search**: _get_conn(search)
+- **_get_conn_gig_pick**: _get_conn(gig_pick)
+- **_get_conn_crossref**: _get_conn(crossref)
+- **_get_conn_stats**: _get_conn(stats)
+
+## Requirements
+
+- Python 3.12+
+- uv
