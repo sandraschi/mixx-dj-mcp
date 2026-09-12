@@ -38,6 +38,18 @@ Opt-in fixture; real UDP on 11119 — partially unblocked by fork OSC server.
 
 ---
 
+## P2c — Resolume fleet crossconnect
+
+Plan: [mixxxxx `docs/RESOLUME-FLEET-CROSSCONNECT.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/RESOLUME-FLEET-CROSSCONNECT.md).
+
+| # | Item |
+|---|------|
+| 8 | R1: Fix `mixx_daw` Resolume OSC; delegate to resolume-mcp :11176 |
+| 9 | R2: Cockpit “Resolume follow deck” sync loop |
+| 10 | Share OSC address constants with resolume-mcp / osc-mcp skill |
+
+---
+
 ## P2b — Dani stem UX (see mixxxxx plan)
 
 Stakeholder plan: [mixxxxx `docs/PLAN-DANI-BEATGRID-STEMS.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/PLAN-DANI-BEATGRID-STEMS.md).
