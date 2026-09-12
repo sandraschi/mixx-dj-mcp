@@ -10,7 +10,7 @@ from pythonosc.osc_server import AsyncIOOSCUDPServer
 from rich.console import Console
 
 from ..config import MixxConfig
-from .protocol import DECK_OBSERVED_COS, OSC_IN_PORT
+from .protocol import DECK_OBSERVED_COS
 
 logger = logging.getLogger(__name__)
 console = Console(file=__import__("sys").stderr)
@@ -28,7 +28,7 @@ def get_bridge() -> "OscBridge":
 class OscBridge:
     def __init__(self, config: MixxConfig):
         self.config = config
-        self._send_client = udp_client.SimpleUDPClient(config.mixx_host, OSC_IN_PORT)
+        self._send_client = udp_client.SimpleUDPClient(config.mixx_host, config.mixx_osc_in_port)
         self._loop: asyncio.AbstractEventLoop | None = None
         self._server_task: asyncio.Task | None = None
         self._thread: threading.Thread | None = None
@@ -70,6 +70,11 @@ class OscBridge:
     def get_global_state(self, key: str, default: Any = None) -> Any:
         with self._lock:
             return self._global_state.get(key, default)
+
+    def has_received_co(self, co: str, deck: int = 1) -> bool:
+        """True if Mixxx sent this CO on the OSC feedback port (not pre-seeded defaults)."""
+        with self._lock:
+            return co in self._deck_state.get(deck, {})
 
     def _update_state(self, address: str, value: Any) -> None:
         parts = address.strip("/").split("/")
@@ -158,7 +163,8 @@ class OscBridge:
             logger.info("OSC bridge connected to Mixxx on port %d", self.config.mixx_osc_out_port)
         else:
             logger.warning(
-                "OSC bridge started but Mixxx did not respond to /mixxxxx/ping on port %d",
+                "OSC bridge started but Mixxx did not respond to /mixxxxx/ping (send port %d, listen %d)",
+                self.config.mixx_osc_in_port,
                 self.config.mixx_osc_out_port,
             )
         logger.info("OSC bridge started on port %d", self.config.mixx_osc_out_port)

@@ -98,6 +98,9 @@ indent-style = "space"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "integration: UDP or live Mixxx tests (skipped in fast CI unless -m integration)",
+]
 
 [dependency-groups]
 dev = [

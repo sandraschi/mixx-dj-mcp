@@ -157,13 +157,14 @@ async def health_check():
 
     proc = get_process_info()
     bridge = get_osc_bridge()
+    osc_live = bridge.probe_mixxx(timeout_s=0.5) if getattr(bridge, "_running", False) else False
     return {
         "status": "ok",
         "server": config.mcp_name,
         "version": "0.1.0",
         "uptime_seconds": get_uptime(),
         "tool_count": get_tool_count(),
-        "providers": {"mixxx_osc": bridge.is_connected()},
+        "providers": {"mixxx_osc": osc_live},
         "mixxx_process_running": proc.running,
     }
 
@@ -338,7 +339,7 @@ async def sfx_search_route(
         return {
             "results": [],
             "total": 0,
-            "message": "sfx-mcp offline — start on port 11120",
+            "message": "sfx-mcp offline - start on port 11120",
             "sfx_available": False,
         }
     try:
@@ -421,7 +422,7 @@ async def effects_action(req: EffectsRequest):
     return result
 
 
-# Music generation — lazy-loaded MusicGen via HuggingFace
+# Music generation - lazy-loaded MusicGen via HuggingFace
 _music_model = None
 
 
@@ -447,7 +448,7 @@ async def _ensure_music_model():
 
 @fastapi_app.post("/api/music/generate")
 async def music_generate(body: dict):
-    """Generate music — tries: Lyria (Vertex AI) → MusicGen (local) → songgeneration-mcp."""
+    """Generate music - tries: Lyria (Vertex AI) → MusicGen (local) → songgeneration-mcp."""
     prompt = body.get("prompt", "")
     duration = int(body.get("duration", 15))
     if not prompt:
@@ -649,7 +650,7 @@ async def mixxx_first_run_setup():
 
 @fastapi_app.get("/api/library/serato/status")
 async def library_serato_status():
-    """List Serato Subcrates if present (no Serato app required — reads filesystem)."""
+    """List Serato Subcrates if present (no Serato app required - reads filesystem)."""
     from .serato_paths import serato_status
 
     return serato_status()
@@ -740,12 +741,12 @@ async def mixxx_probe():
 
     proc = get_process_info()
     msg = (
-        "OSC pong received — mixxxxx connected."
+        "OSC pong received - mixxxxx connected."
         if ok
         else (
             "No OSC pong. Is Mixxx running with OSC enabled on the configured ports?"
             if proc.running
-            else "Mixxx is not running — launch it first."
+            else "Mixxx is not running - launch it first."
         )
     )
     return {"success": ok, "osc_connected": ok, "process_running": proc.running, "message": msg}
@@ -832,7 +833,7 @@ async def _try_execute_command(msg: str) -> dict | None:
 
 @fastapi_app.post("/api/llm/chat")
 async def llm_chat(body: dict):
-    """Chat endpoint — executes commands via OSC, falls back to Ollama."""
+    """Chat endpoint - executes commands via OSC, falls back to Ollama."""
     messages = body.get("messages", [])
     model = body.get("model", "llama3.2:3b")
     user_msg = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
@@ -859,7 +860,7 @@ async def llm_chat(body: dict):
     except Exception:
         logger.debug("Ollama chat failed")
 
-    # Ollama failed — not a command, not an LLM request
+    # Ollama failed - not a command, not an LLM request
     return {
         "message": (
             "Not recognized as a DJ command and no LLM available. "

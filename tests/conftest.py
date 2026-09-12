@@ -14,7 +14,10 @@ def mock_osc_bridge():
 
 
 @pytest.fixture(autouse=True)
-def auto_mock_bridge(mock_osc_bridge):
+def auto_mock_bridge(request, mock_osc_bridge):
+    if request.node.get_closest_marker("integration"):
+        yield None
+        return
     with (
         patch("mixx_dj_mcp.tools.deck_control.get_bridge") as deck_mock,
         patch("mixx_dj_mcp.tools.library.get_bridge") as lib_mock,

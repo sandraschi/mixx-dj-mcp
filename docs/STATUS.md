@@ -38,7 +38,8 @@ Last updated: 2026-07-27. Companion to [mixxxxx](https://github.com/sandraschi/m
 | [`docs/TODO.md`](TODO.md) | Backlog |
 | mixxxxx [`docs/STATUS.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/STATUS.md) | What actually works in the fork |
 
-## Not implemented (fork-side)
+## Fork-side (see mixxxxx `docs/STATUS.md`)
 
-- NDI output (mixxxxx TODO 27) — documented in Help tab only
-- Beat-locked video FX, fallback chain — mixxxxx IDEAS.md order before NDI
+- **Video / beat FX / fallback chain** — implemented in mixxxxx; MCP exposes via OSC + `mixx_deck`
+- **NDI** — partial in mixxxxx (SDK verify pending); Help tab documents status
+- **Upstream Mixxx** — stable **2.5.6**; **2.6 beta** adds stems/cues/controllers, **no video mixing** ([#8034](https://github.com/mixxxdj/mixxx/issues/8034) still open). Video remains mixxxxx-only.

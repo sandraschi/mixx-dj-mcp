@@ -115,7 +115,7 @@ def build_capabilities(
             return _feature_entry(
                 available=False,
                 enabled=False,
-                reason="Requires mixxxxx (video fork) — vanilla Mixxx has no video/stem/NDI stack",
+                reason="Requires mixxxxx (video fork) - vanilla Mixxx has no video/stem/NDI stack",
             )
 
         if needs_osc and not osc_connected:
@@ -160,15 +160,15 @@ def build_capabilities(
         features["video_deck"]["enabled"] = is_mixxxxx or fork_unknown
 
     summary = (
-        "mixxxxx connected — full AV feature set"
+        "mixxxxx connected - full AV feature set"
         if is_mixxxxx and osc_connected
-        else "Vanilla Mixxx — audio/OSC only; video/stems/NDI disabled"
+        else "Vanilla Mixxx - audio/OSC only; video/stems/NDI disabled"
         if is_vanilla
-        else "Engine unknown — launch and probe OSC"
+        else "Engine unknown - launch and probe OSC"
         if fork_unknown
-        else "mixxxxx running — enable OSC to control decks"
+        else "mixxxxx running - enable OSC to control decks"
         if is_mixxxxx and not osc_connected
-        else "Mixxx running — connect OSC"
+        else "Mixxx running - connect OSC"
     )
 
     return {
@@ -184,9 +184,11 @@ def build_capabilities(
 
 def get_engine_capabilities(bridge) -> dict[str, Any]:
     proc = get_process_info()
-    osc_connected = bridge.is_connected()
-    has_video = bridge.get_state("video_enabled", 1, default=None) is not None if osc_connected else False
-    has_phase = bridge.get_state("phase", 1, default=None) is not None if osc_connected else False
+    osc_connected = False
+    if getattr(bridge, "_running", False):
+        osc_connected = bridge.probe_mixxx(timeout_s=0.35)
+    has_video = bridge.has_received_co("video_enabled", 1) if osc_connected else False
+    has_phase = bridge.has_received_co("phase", 1) if osc_connected else False
     fork = resolve_fork(
         proc=proc,
         osc_connected=osc_connected,
