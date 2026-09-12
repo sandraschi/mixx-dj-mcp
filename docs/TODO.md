@@ -38,6 +38,18 @@ Opt-in fixture; real UDP on 11119 — partially unblocked by fork OSC server.
 
 ---
 
+## P2b — Dani stem UX (see mixxxxx plan)
+
+Stakeholder plan: [mixxxxx `docs/PLAN-DANI-BEATGRID-STEMS.md`](https://github.com/sandraschi/mixxxxx/blob/video/docs/PLAN-DANI-BEATGRID-STEMS.md).
+
+| # | Item | Note |
+|---|------|------|
+| 5 | Help/Cockpit: offline Demucs vs realtime stems | No "Serato Stems" claim until mixxxxx STATUS says Works |
+| 6 | Document prep workflow | crate → `mixx_stems` → samplers → optional `stem_swap` |
+| 7 | After mixxxxx 2.6 merge | Expose stem-file playback in capabilities if COs land |
+
+---
+
 ## P3 — features (blocked on mixxxxx)
 
 | Item | mixxxxx TODO |
