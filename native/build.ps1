@@ -9,6 +9,12 @@ New-Item -ItemType Directory -Force -Path $ResourceDir, $DevDir | Out-Null
 
 Write-Host "=== ${RepoName} Tauri Release Build ===" -ForegroundColor Cyan
 
+# Naked `bun`/`bun x` inherit whatever PATH the invoking shell happened to
+# have, which can predate bun's installer PATH registration in an
+# already-open shell (BUG-045). Resolve a qualified path once instead.
+$bunExe = Join-Path $env:USERPROFILE ".bun\bin\bun.exe"
+if (-not (Test-Path $bunExe)) { $bunExe = (Get-Command bun -ErrorAction SilentlyContinue).Source }
+
 # Step 0: Verify API_BASE matches backend port
 $apiFiles = @("web_sota\src\lib\api.ts", "web_sota\src\api.ts", "webapp\src\lib\api.ts", "webapp\frontend\src\lib\api.ts")
 foreach ($f in $apiFiles) {
@@ -42,7 +48,8 @@ foreach ($dir in $frontendDirs) {
         }
 
         if ($pm -eq "bun") {
-            bun install 2>$null
+            if (-not $bunExe) { throw "bun not found — install from https://bun.sh" }
+            & $bunExe install 2>$null
         } else {
             npm install --silent 2>$null
         }
@@ -50,7 +57,7 @@ foreach ($dir in $frontendDirs) {
         # TypeScript lint gate
         Write-Host "  tsc --noEmit..." -ForegroundColor Gray
         if ($pm -eq "bun") {
-            $tscOut = bun x tsc --noEmit 2>&1
+            $tscOut = & $bunExe x tsc --noEmit 2>&1
         } else {
             $tscOut = npx tsc --noEmit 2>&1
         }
@@ -62,7 +69,7 @@ foreach ($dir in $frontendDirs) {
         }
 
         if ($pm -eq "bun") {
-            bun run build
+            & $bunExe run build
         } else {
             npm run build
         }
