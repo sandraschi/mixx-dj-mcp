@@ -11,6 +11,12 @@ downloads/
 eggs/
 .eggs/
 lib/
+# The Python-boilerplate lib/ rule above also matched the webapp's
+# legitimate TypeScript source dir. 4 of its 5 files were tracked anyway
+# (force-added before/around the rule), but capabilities.ts - created
+# later - was silently never tracked, so it existed only on one dev
+# machine and a fresh clone couldn't compile the frontend.
+!web_sota/src/lib/
 lib64/
 parts/
 sdist/
