@@ -586,7 +586,7 @@ async def fork_info():
         "features": {
             "video": has_video,
             "phase_indicator": caps["features"]["phase_indicator"]["available"],
-            "rekordbox_export": caps["features"]["rekordbox_export"]["available"],
+            "engine_export": caps["features"]["engine_export"]["available"],
             "serato_export": caps["is_mixxxxx"],
             "virtualdj_export": caps["is_mixxxxx"],
             "stem_separation": caps["features"]["stem_separation"]["available"],

@@ -78,7 +78,7 @@ The [Cockpit webapp](../web_sota/src/pages/Cockpit.tsx) detects whether mixxxxx 
   "features": {
     "video": true,
     "phase_indicator": true,
-    "rekordbox_export": true,
+    "engine_export": true,
     "serato_export": true,
     "virtualdj_export": true
   }
