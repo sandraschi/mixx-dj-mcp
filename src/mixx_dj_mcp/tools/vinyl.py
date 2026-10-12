@@ -1,5 +1,6 @@
 """Vinyl record catalog tool -- OCR, AI categorization, search, and Plex crossref."""
 
+import asyncio
 import json
 import os
 import sqlite3
@@ -232,7 +233,8 @@ async def mixx_vinyl(
                     "message": f"Catalog script not found at {script_path}",
                     "data": {},
                 }
-            result = subprocess.run(
+            result = await asyncio.to_thread(
+                subprocess.run,
                 [sys.executable, script_path, directory],
                 capture_output=True,
                 text=True,

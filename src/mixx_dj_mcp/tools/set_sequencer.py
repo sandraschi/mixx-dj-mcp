@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import shutil
@@ -318,7 +319,7 @@ def register_sequencer_tools(mcp: FastMCP):
                         return {"success": False, "message": "No recordings found", "data": {}}
 
                     latest = recordings[0]
-                    duration = _get_audio_duration(str(latest))
+                    duration = await asyncio.to_thread(_get_audio_duration, str(latest))
 
                     return {
                         "success": True,
