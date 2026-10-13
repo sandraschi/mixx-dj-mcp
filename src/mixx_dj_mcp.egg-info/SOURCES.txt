@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 src/mixx_dj_mcp/__init__.py
@@ -12,6 +13,7 @@ src/mixx_dj_mcp/mixxx_launcher.py
 src/mixx_dj_mcp/mixxx_library.py
 src/mixx_dj_mcp/osc_ports.py
 src/mixx_dj_mcp/plex_client.py
+src/mixx_dj_mcp/resolume_client.py
 src/mixx_dj_mcp/serato_paths.py
 src/mixx_dj_mcp/server.py
 src/mixx_dj_mcp/sfx_client.py
@@ -57,6 +59,8 @@ tests/test_first_run.py
 tests/test_library_api.py
 tests/test_mixer.py
 tests/test_osc_inkscape.py
+tests/test_osc_integration.py
+tests/test_resolume_client.py
 tests/test_serato_api.py
 tests/test_serato_paths.py
 tests/test_sfx_api.py
