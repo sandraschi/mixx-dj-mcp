@@ -53,7 +53,7 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 
 | You say | The AI does |
 |---------|-------------|
-| "Play deck 2" | `mixx_deck(operation="play_pause", deck=2)` — OSC to Mixxx |
+| "Play deck 2" | `mixx_deck(operation="play_pause", deck=2)` -- OSC to Mixxx |
 | "Find some 128 BPM tech house" | `mixx_library(operation="search", query="tech house")` |
 | "Add reverb to the outgoing track" | `mixx_effects(operation="chain_load", rack=1, effect="Reverb")` |
 | "Plan a 30-min drum & bass set" | `mixx_ai_set(operation="plan", style="drum and bass")` |
@@ -66,14 +66,14 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 
 | Tool | What it controls |
 |------|-----------------|
-| `mixx_deck` | Play/pause, load, cue, loops, sync, rate, scratch, hotcues, quantize, keylock — plus video |
+| `mixx_deck` | Play/pause, load, cue, loops, sync, rate, scratch, hotcues, quantize, keylock -- plus video |
 | `mixx_library` | Search, browse crates/playlists, BPM/key metadata |
 | `mixx_effects` | Effect chains, parameters, quick effects, super knob |
 | `mixx_mixer` | Crossfader, EQ, gain, headphone cue, talkover, mic |
 | `mixx_analyze` | BPM detection, musical key (Krumhansl-Schmuckler), energy, cue suggestions |
 | `mixx_stems` | Demucs stem separation, sampler loading, stem-aware mixing |
 | `mixx_transition` | AI-suggested transitions, 8 effect types, auto-crossfader |
-| `mixx_ai_set` | **Autonomous DJ** — plan sets, perform transitions, review |
+| `mixx_ai_set` | **Autonomous DJ** -- plan sets, perform transitions, review |
 | `mixx_recording` | Record, replay, and export DJ sets as OSC streams |
 | `mixx_history` | Play history, style profile, track suggestions |
 | `mixx_crate` | LLM-generated smart crates by BPM/key/genre |
@@ -82,7 +82,7 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 | `mixx_vinyl` | OCR catalog, AI gig picker, Plex crossref |
 | `mixx_controller` | USB auto-detect, install mappings |
 | `mixx_daw` | Export stems to DaVinci Resolve, Reaper |
-| Prefab cards | `show_deck/mixer/library_status_card` — rich in-chat UI |
+| Prefab cards | `show_deck/mixer/library_status_card` -- rich in-chat UI |
 
 ## Quick links
 
@@ -91,12 +91,12 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 | **Installing** the server, webapp, NSIS installer, or MCPB | [`docs/INSTALL.md`](docs/INSTALL.md) |
 | **Status & backlog** | [`docs/STATUS.md`](docs/STATUS.md) · [`docs/TODO.md`](docs/TODO.md) |
 | **Full tool reference** with parameters, returns, and examples | [`docs/TOOLS.md`](docs/TOOLS.md) |
-| **Using video** — requires the mixxxxx fork of Mixxx | [`docs/MIXXX_VIDEO.md`](docs/MIXXX_VIDEO.md) |
+| **Using video** -- requires the mixxxxx fork of Mixxx | [`docs/MIXXX_VIDEO.md`](docs/MIXXX_VIDEO.md) |
 | **AV orchestrator** (mixxxxx hub, NDI, Resolume, OBS) | [`docs/ORCHESTRATOR.md`](docs/ORCHESTRATOR.md) · webapp **Help → AV Rig** |
 | **NDI** (network video from mixxxxx) | [`docs/NDI.md`](docs/NDI.md) · [`docs/NDI-TARGETS.md`](docs/NDI-TARGETS.md) · webapp **Help → NDI** |
 | **Project status & backlog** | [`docs/STATUS.md`](docs/STATUS.md) · [`docs/TODO.md`](docs/TODO.md) |
 | **AI-powered transitions** between decks | [`docs/AI_TRANSITIONS.md`](docs/AI_TRANSITIONS.md) |
-| **Architecture** — how the OSC bridge, REST API, and webapp work | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| **Architecture** -- how the OSC bridge, REST API, and webapp work | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | **Beginner's guide** to DJing with Mixxx | [`docs/NOOB_GUIDE.md`](docs/NOOB_GUIDE.md) |
 | **Comparing** Mixxx to other DJ software | [`docs/DJ_LANDSCAPE.md`](docs/DJ_LANDSCAPE.md) |
 | **Algoriddim djay** feature parity | [`docs/ALGORIDDIM_COMPARISON.md`](docs/ALGORIDDIM_COMPARISON.md) |
@@ -104,7 +104,7 @@ Your AI assistant (Claude, Cursor, opencode) can now control your decks.
 
 ## Video DJing
 
-Mixx-DJ-MCP supports the **mixxxxx** video fork — a modified Mixxx build that adds FFmpeg video playback, per-deck video widgets, and fullscreen projector output alongside the standard audio engine.
+Mixx-DJ-MCP supports the **mixxxxx** video fork -- a modified Mixxx build that adds FFmpeg video playback, per-deck video widgets, and fullscreen projector output alongside the standard audio engine.
 
 [mixxxxx on GitHub](https://github.com/sandraschi/mixxxxx) &nbsp;·&nbsp; [`docs/MIXXX_VIDEO.md`](docs/MIXXX_VIDEO.md)
 
@@ -119,7 +119,7 @@ Mixx-DJ-MCP supports the **mixxxxx** video fork — a modified Mixxx build that 
 
 ## Fleet integrations
 
-Mixx-DJ-MCP is a **Fleet Audio Hub** — it connects to other MCP servers for a unified DJ ecosystem:
+Mixx-DJ-MCP is a **Fleet Audio Hub** -- it connects to other MCP servers for a unified DJ ecosystem:
 
 | Server | Integration |
 |--------|-------------|
@@ -131,10 +131,19 @@ Mixx-DJ-MCP is a **Fleet Audio Hub** — it connects to other MCP servers for a 
 | `davinci-resolve-mcp` | Export stems to Fairlight for post-production |
 | `reaper-mcp` | Export stems to Reaper DAW |
 | `inkscape-mcp` | AI skin colour palette generation |
-| `speech-mcp` | Voice-controlled DJing ("Hey Mixxx, load deck 2...") |
+## Fleet Crossconnects (Companions)
+
+`mixx-dj-mcp` works completely standalone. You can optionally connect it with companion servers in the `sandraschi` fleet to unlock extended features:
+
+| Companion Server | Feature Unlocked | Status | Setup |
+|---|---|---|---|
+| [`resolume-mcp`](https://github.com/sandraschi/resolume-mcp) | ndi-vj-routing, osc-clip-sync, live-projection-mapping | Optional | [Install Guide](https://github.com/sandraschi/resolume-mcp#quick-install) |
+| [`resonite-mcp`](https://github.com/sandraschi/resonite-mcp) | virtual-world-stage, nekomimi-avatar-dance, osc-bpm-telemetry | Optional | [Install Guide](https://github.com/sandraschi/resonite-mcp#quick-install) |
+
+> **Self-Contained Companions**: Fleet companions operate independently. Installing companions does not trigger transitive dependency chains.
 
 ## License
 
-MIT — Sandra Schipal
+MIT -- Sandra Schipal
 
 _Vinyl not included. Mixxx not included. Bad music taste is your own._

@@ -1,4 +1,4 @@
-﻿# Per-repo fleet start config for mixx-dj-mcp
+# Per-repo fleet start config for mixx-dj-mcp
 # Edit ports/backend target here - start.ps1 is fleet-standard.
 @{
     Name         = 'mixx-dj-mcp'
@@ -10,6 +10,7 @@
         Kind          = 'uvicorn'
         UvicornTarget = 'mixx_dj_mcp.server:app'
         SyncExtras    = @('dev')
+        SyncOnStart  = $true
         Env           = @{ WEB_PORT = '11116' }
     }
     Frontend = @{
