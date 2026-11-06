@@ -39,6 +39,8 @@
 
 <br/>
 
+AI-native DJ control for Mixxx - 80+ operations across decks, library, effects, mixer, stems, transitions and video via OSC.
+
 ## One command to start
 
 ```bash
